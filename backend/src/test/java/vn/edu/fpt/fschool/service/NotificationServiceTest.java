@@ -14,6 +14,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import vn.edu.fpt.fschool.dto.NotificationDtos.NotificationResponse;
 import vn.edu.fpt.fschool.dto.NotificationDtos.UnreadCountResponse;
 import vn.edu.fpt.fschool.model.Notification;
@@ -71,6 +75,37 @@ class NotificationServiceTest {
     assertEquals("NEWS", result.get(0).type());
     assertFalse(result.get(0).isRead());
     verify(notificationRepository, times(1)).findByUserIdOrderByCreatedAtDesc(1L);
+  }
+
+  @Test
+  @DisplayName("Lấy danh sách thông báo phân trang thành công")
+  void getNotifications_withPaging_shouldReturnPage() {
+    when(userRepository.findByEmailIgnoreCase("student@fpt.edu.vn")).thenReturn(Optional.of(testUser));
+    Pageable pageable = PageRequest.of(0, 10);
+    Page<Notification> mockPage = new PageImpl<>(List.of(testNotification), pageable, 1);
+    when(notificationRepository.findByUserIdOrderByCreatedAtDesc(1L, pageable)).thenReturn(mockPage);
+
+    Page<NotificationResponse> result = notificationService.getNotifications("student@fpt.edu.vn", pageable, false);
+
+    assertNotNull(result);
+    assertEquals(1, result.getTotalElements());
+    assertEquals("Lịch thi mới", result.getContent().get(0).title());
+    verify(notificationRepository, times(1)).findByUserIdOrderByCreatedAtDesc(1L, pageable);
+  }
+
+  @Test
+  @DisplayName("Lấy danh sách thông báo chưa đọc phân trang thành công")
+  void getNotifications_unreadOnly_shouldCallUnreadRepositoryQuery() {
+    when(userRepository.findByEmailIgnoreCase("student@fpt.edu.vn")).thenReturn(Optional.of(testUser));
+    Pageable pageable = PageRequest.of(0, 10);
+    Page<Notification> mockPage = new PageImpl<>(List.of(testNotification), pageable, 1);
+    when(notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(1L, pageable)).thenReturn(mockPage);
+
+    Page<NotificationResponse> result = notificationService.getNotifications("student@fpt.edu.vn", pageable, true);
+
+    assertNotNull(result);
+    assertEquals(1, result.getTotalElements());
+    verify(notificationRepository, times(1)).findByUserIdAndIsReadFalseOrderByCreatedAtDesc(1L, pageable);
   }
 
   @Test

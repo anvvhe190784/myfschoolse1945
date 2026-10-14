@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +24,16 @@ public class NotificationController {
   private final NotificationService notificationService;
 
   @GetMapping
-  @Operation(summary = "Lấy danh sách thông báo của người dùng hiện tại", description = "Lấy danh sách thông báo sắp xếp theo thời gian mới nhất")
-  public ResponseEntity<List<NotificationResponse>> getNotifications(Authentication authentication) {
+  @Operation(summary = "Lấy danh sách thông báo phân trang của người dùng hiện tại", description = "Lấy danh sách thông báo sắp xếp theo thời gian mới nhất có hỗ trợ phân trang")
+  public ResponseEntity<Page<NotificationResponse>> getNotifications(
+      Authentication authentication,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(defaultValue = "false") boolean unreadOnly
+  ) {
     String email = authentication.getName();
-    return ResponseEntity.ok(notificationService.getNotifications(email));
+    Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size));
+    return ResponseEntity.ok(notificationService.getNotifications(email, pageable, unreadOnly));
   }
 
   @GetMapping("/unread-count")

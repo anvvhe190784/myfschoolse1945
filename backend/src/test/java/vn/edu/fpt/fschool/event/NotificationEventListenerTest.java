@@ -1,7 +1,6 @@
 package vn.edu.fpt.fschool.event;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
@@ -24,33 +23,32 @@ import vn.edu.fpt.fschool.repository.UserRepository;
 @ExtendWith(MockitoExtension.class)
 class NotificationEventListenerTest {
 
-  @Mock
-  private NotificationRepository notificationRepository;
+  @Mock private NotificationRepository notificationRepository;
 
-  @Mock
-  private UserRepository userRepository;
+  @Mock private UserRepository userRepository;
 
-  @InjectMocks
-  private NotificationEventListener eventListener;
+  @InjectMocks private NotificationEventListener eventListener;
 
   private User student1;
   private User student2;
 
   @BeforeEach
   void setUp() {
-    student1 = User.builder()
-        .userId(1L)
-        .email("student1@fpt.edu.vn")
-        .fullName("Nguyen Van A")
-        .role("STUDENT")
-        .build();
+    student1 =
+        User.builder()
+            .userId(1L)
+            .email("student1@fpt.edu.vn")
+            .fullName("Nguyen Van A")
+            .role("STUDENT")
+            .build();
 
-    student2 = User.builder()
-        .userId(2L)
-        .email("student2@fpt.edu.vn")
-        .fullName("Tran Thi B")
-        .role("STUDENT")
-        .build();
+    student2 =
+        User.builder()
+            .userId(2L)
+            .email("student2@fpt.edu.vn")
+            .fullName("Tran Thi B")
+            .role("STUDENT")
+            .build();
   }
 
   @Test
@@ -72,11 +70,13 @@ class NotificationEventListenerTest {
   }
 
   @Test
-  @DisplayName("Event: NewsPublishedEvent kích hoạt batch insert thông báo NEWS cho tất cả học sinh")
+  @DisplayName(
+      "Event: NewsPublishedEvent kích hoạt batch insert thông báo NEWS cho tất cả học sinh")
   void onNewsPublished_shouldBroadcastToAllStudents() {
     when(userRepository.findByRole("STUDENT")).thenReturn(List.of(student1, student2));
 
-    eventListener.onNewsPublished(new NewsPublishedEvent(42L, "Lịch thi mới", "Chi tiết ca thi đã có"));
+    eventListener.onNewsPublished(
+        new NewsPublishedEvent(42L, "Lịch thi mới", "Chi tiết ca thi đã có"));
 
     @SuppressWarnings("unchecked")
     ArgumentCaptor<List<Notification>> captor = ArgumentCaptor.forClass(List.class);

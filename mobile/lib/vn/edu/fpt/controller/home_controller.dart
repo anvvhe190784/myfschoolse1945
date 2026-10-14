@@ -197,10 +197,11 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final list = await apiClient.getNews();
+      final list = await apiClient.getNews(limit: 3);
       _newsItems = list
           .map((item) =>
               HomeNewsItem.fromModel(NewsModel.fromJson(item as Map<String, dynamic>)))
+          .take(3)
           .toList();
       _isLoadingNews = false;
       notifyListeners();

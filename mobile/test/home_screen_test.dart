@@ -103,6 +103,25 @@ void main() {
       );
     });
 
+    test('HomeController caps news items to at most 3 items', () async {
+      final mockClient = MockApiClient();
+      mockClient.mockNewsList = List.generate(
+        7,
+        (i) => {
+          'newsId': i + 1,
+          'title': 'Tin tức $i',
+          'summary': 'Tóm tắt $i',
+          'content': 'Nội dung $i',
+          'category': 'GENERAL',
+          'publishedAt': '2026-10-14T08:00:00Z',
+        },
+      );
+      final controller = HomeController(apiClient: mockClient);
+      await controller.loadNews();
+
+      expect(controller.newsItems.length, 3);
+    });
+
     testWidgets('HomeScreen renders BottomNavigationBar and switches tabs',
         (WidgetTester tester) async {
       await tester.pumpWidget(

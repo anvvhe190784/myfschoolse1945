@@ -9,11 +9,16 @@ class NotificationController extends ChangeNotifier {
   final ApiClient apiClient;
 
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   String? _error;
   List<NotificationModel> _notifications = [];
   int _unreadCount = 0;
   NotificationFilter _currentFilter = NotificationFilter.all;
   bool _disposed = false;
+
+  int _currentPage = 0;
+  static const int _pageSize = 10;
+  bool _hasMore = true;
 
   NotificationController({ApiClient? apiClient})
       : apiClient = apiClient ?? ApiClient.instance;
@@ -32,6 +37,9 @@ class NotificationController extends ChangeNotifier {
   }
 
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _hasMore;
+  int get currentPage => _currentPage;
   String? get error => _error;
   List<NotificationModel> get notifications => _notifications;
   int get unreadCount => _unreadCount;
@@ -48,26 +56,77 @@ class NotificationController extends ChangeNotifier {
     if (_currentFilter != filter) {
       _currentFilter = filter;
       notifyListeners();
+      loadNotifications(refresh: true);
     }
   }
 
-  /// Load full list of notifications and recalculate unread count
-  Future<void> loadNotifications() async {
+  List<NotificationModel> _parseItems(dynamic response) {
+    List<dynamic> rawList = [];
+    if (response is Map<String, dynamic> && response['content'] is List) {
+      rawList = response['content'] as List<dynamic>;
+      _hasMore = !(response['last'] as bool? ?? true);
+    } else if (response is List) {
+      rawList = response;
+      _hasMore = rawList.length >= _pageSize;
+    } else {
+      _hasMore = false;
+    }
+    return rawList
+        .map((item) => NotificationModel.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Load initial or refreshed list of notifications and recalculate unread count
+  Future<void> loadNotifications({bool refresh = false}) async {
+    _currentPage = 0;
+    _hasMore = true;
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final list = await apiClient.getNotifications();
-      _notifications = list
-          .map((item) => NotificationModel.fromJson(item as Map<String, dynamic>))
-          .toList();
+      final response = await apiClient.getNotifications(
+        page: 0,
+        size: _pageSize,
+        unreadOnly: _currentFilter == NotificationFilter.unread,
+      );
+      _notifications = _parseItems(response);
       _unreadCount = _notifications.where((n) => !n.isRead).length;
       _isLoading = false;
       notifyListeners();
     } catch (e) {
       _isLoading = false;
       _error = e is ApiException ? e.message : 'Lỗi tải thông báo: $e';
+      notifyListeners();
+    }
+  }
+
+  /// Load next page of notifications and append to existing list
+  Future<void> loadMore() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+
+    _isLoadingMore = true;
+    notifyListeners();
+
+    try {
+      final nextPage = _currentPage + 1;
+      final response = await apiClient.getNotifications(
+        page: nextPage,
+        size: _pageSize,
+        unreadOnly: _currentFilter == NotificationFilter.unread,
+      );
+      final newItems = _parseItems(response);
+      if (newItems.isEmpty) {
+        _hasMore = false;
+      } else {
+        _currentPage = nextPage;
+        _notifications.addAll(newItems);
+        _unreadCount = _notifications.where((n) => !n.isRead).length;
+      }
+      _isLoadingMore = false;
+      notifyListeners();
+    } catch (_) {
+      _isLoadingMore = false;
       notifyListeners();
     }
   }

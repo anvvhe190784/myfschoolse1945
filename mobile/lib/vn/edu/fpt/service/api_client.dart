@@ -432,8 +432,9 @@ class ApiClient {
   }
 
   /// GET /api/v1/news
-  Future<List<dynamic>> getNews() async {
-    final result = await get('/news');
+  Future<List<dynamic>> getNews({int? limit}) async {
+    final queryParams = limit != null ? {'limit': limit.toString()} : null;
+    final result = await get('/news', queryParams: queryParams);
     if (result is List) {
       return result;
     }
@@ -497,12 +498,17 @@ class ApiClient {
   }
 
   /// GET /api/v1/notifications
-  Future<List<dynamic>> getNotifications() async {
-    final result = await get('/notifications');
-    if (result is List) {
-      return result;
-    }
-    return [];
+  Future<dynamic> getNotifications({
+    int page = 0,
+    int size = 10,
+    bool unreadOnly = false,
+  }) async {
+    final result = await get('/notifications', queryParams: {
+      'page': page.toString(),
+      'size': size.toString(),
+      'unreadOnly': unreadOnly.toString(),
+    });
+    return result;
   }
 
   /// GET /api/v1/notifications/unread-count

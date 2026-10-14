@@ -6,18 +6,11 @@ import java.time.OffsetDateTime;
 public class NewsDtos {
 
   public record CreateNewsRequest(
-      @NotBlank(message = "Tiêu đề không được để trống")
-      String title,
-
-      @NotBlank(message = "Tóm tắt không được để trống")
-      String summary,
-
-      @NotBlank(message = "Nội dung bài viết không được để trống")
-      String content,
-
+      @NotBlank(message = "Tiêu đề không được để trống") String title,
+      @NotBlank(message = "Tóm tắt không được để trống") String summary,
+      @NotBlank(message = "Nội dung bài viết không được để trống") String content,
       String thumbnailUrl,
-      String category
-  ) {}
+      String category) {}
 
   public record NewsResponse(
       Long newsId,
@@ -28,6 +21,5 @@ public class NewsDtos {
       String authorName,
       String category,
       Integer viewsCount,
-      OffsetDateTime publishedAt
-  ) {}
+      OffsetDateTime publishedAt) {}
 }

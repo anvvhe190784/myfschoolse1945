@@ -15,6 +15,7 @@ class NotificationScreen extends StatefulWidget {
 class _NotificationScreenState extends State<NotificationScreen> {
   late final NotificationController _controller;
   bool _isLocalController = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -25,11 +26,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
       _controller = NotificationController();
       _isLocalController = true;
     }
+    _scrollController.addListener(_onScroll);
     _controller.loadNotifications();
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (_controller.hasMore && !_controller.isLoadingMore) {
+        _controller.loadMore();
+      }
+    }
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     if (_isLocalController) {
       _controller.dispose();
     }
@@ -318,12 +331,33 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     return RefreshIndicator(
       color: const Color(0xFFF27024),
-      onRefresh: () => _controller.loadNotifications(),
+      onRefresh: () => _controller.loadNotifications(refresh: true),
       child: ListView.separated(
+        controller: _scrollController,
         padding: const EdgeInsets.all(12),
-        itemCount: items.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 8),
+        itemCount: items.length + (_controller.hasMore ? 1 : 0),
+        separatorBuilder: (_, index) {
+          if (index >= items.length) return const SizedBox.shrink();
+          return const SizedBox(height: 8);
+        },
         itemBuilder: (context, index) {
+          if (index >= items.length) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: _controller.isLoadingMore
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF27024)),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            );
+          }
           final item = items[index];
           return _buildNotificationCard(item);
         },

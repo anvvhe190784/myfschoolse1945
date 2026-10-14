@@ -172,7 +172,10 @@ class MockApiClient extends ApiClient {
   ];
 
   @override
-  Future<List<dynamic>> getNews() async {
+  Future<List<dynamic>> getNews({int? limit}) async {
+    if (limit != null && limit > 0) {
+      return mockNewsList.take(limit).toList();
+    }
     return mockNewsList;
   }
 
@@ -210,8 +213,36 @@ class MockApiClient extends ApiClient {
   ];
 
   @override
-  Future<List<dynamic>> getNotifications() async {
-    return mockNotificationList;
+  Future<dynamic> getNotifications({
+    int page = 0,
+    int size = 10,
+    bool unreadOnly = false,
+  }) async {
+    var list = mockNotificationList;
+    if (unreadOnly) {
+      list = list.where((n) => n['isRead'] == false).toList();
+    }
+    final start = page * size;
+    if (start >= list.length) {
+      return {
+        'content': <Map<String, dynamic>>[],
+        'totalPages': (list.length / size).ceil(),
+        'totalElements': list.length,
+        'last': true,
+        'number': page,
+        'size': size,
+      };
+    }
+    final end = (start + size < list.length) ? start + size : list.length;
+    final paged = list.sublist(start, end);
+    return {
+      'content': paged,
+      'totalPages': (list.length / size).ceil(),
+      'totalElements': list.length,
+      'last': end >= list.length,
+      'number': page,
+      'size': size,
+    };
   }
 
   @override

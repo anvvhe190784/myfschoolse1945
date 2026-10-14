@@ -12,8 +12,24 @@ import vn.edu.fpt.fschool.model.Notification;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-  @Query("SELECT n FROM Notification n LEFT JOIN FETCH n.user WHERE n.user.userId = :userId ORDER BY n.createdAt DESC")
+  @Query(
+      "SELECT n FROM Notification n LEFT JOIN FETCH n.user WHERE n.user.userId = :userId ORDER BY n.createdAt DESC")
   List<Notification> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
+
+  @Query(
+      value =
+          "SELECT n FROM Notification n LEFT JOIN FETCH n.user WHERE n.user.userId = :userId ORDER BY n.createdAt DESC",
+      countQuery = "SELECT COUNT(n) FROM Notification n WHERE n.user.userId = :userId")
+  org.springframework.data.domain.Page<Notification> findByUserIdOrderByCreatedAtDesc(
+      @Param("userId") Long userId, org.springframework.data.domain.Pageable pageable);
+
+  @Query(
+      value =
+          "SELECT n FROM Notification n LEFT JOIN FETCH n.user WHERE n.user.userId = :userId AND n.isRead = false ORDER BY n.createdAt DESC",
+      countQuery =
+          "SELECT COUNT(n) FROM Notification n WHERE n.user.userId = :userId AND n.isRead = false")
+  org.springframework.data.domain.Page<Notification> findByUserIdAndIsReadFalseOrderByCreatedAtDesc(
+      @Param("userId") Long userId, org.springframework.data.domain.Pageable pageable);
 
   @Query("SELECT COUNT(n) FROM Notification n WHERE n.user.userId = :userId AND n.isRead = false")
   long countByUserIdAndIsReadFalse(@Param("userId") Long userId);
@@ -21,6 +37,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
   Optional<Notification> findByNotificationIdAndUser_UserId(Long notificationId, Long userId);
 
   @Modifying(clearAutomatically = true)
-  @Query("UPDATE Notification n SET n.isRead = true WHERE n.user.userId = :userId AND n.isRead = false")
+  @Query(
+      "UPDATE Notification n SET n.isRead = true WHERE n.user.userId = :userId AND n.isRead = false")
   int markAllAsReadByUserId(@Param("userId") Long userId);
 }

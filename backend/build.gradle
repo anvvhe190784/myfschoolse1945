@@ -1,96 +1,96 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.1.1'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '4.1.1'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'vn.edu.fpt'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-	developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 
-	// Swagger / OpenAPI 3 UI
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
+    // Swagger / OpenAPI 3 UI
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
 
-	// JWT (io.jsonwebtoken)
-	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    // JWT (io.jsonwebtoken)
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
-	// Resilience4j
-	implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+    // Resilience4j
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
 
-	// MapStruct & Lombok
-	compileOnly 'org.projectlombok:lombok:1.18.36'
-	annotationProcessor 'org.projectlombok:lombok:1.18.36'
-	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
-	implementation 'org.mapstruct:mapstruct:1.6.3'
-	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+    // MapStruct & Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.36'
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 
-	runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
 
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
-	def envFile = file('.env')
-	if (envFile.exists()) {
-		envFile.readLines().each { line ->
-			def trimmed = line.trim()
-			if (trimmed && !trimmed.startsWith('#') && trimmed.contains('=')) {
-				def parts = trimmed.split('=', 2)
-				environment parts[0].trim(), parts[1].trim()
-			}
-		}
-	}
+    useJUnitPlatform()
+    def envFile = file('.env')
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            def trimmed = line.trim()
+            if (trimmed && !trimmed.startsWith('#') && trimmed.contains('=')) {
+                def parts = trimmed.split('=', 2)
+                environment parts[0].trim(), parts[1].trim()
+            }
+        }
+    }
 }
 
 tasks.register('startDockerRedis', Exec) {
-	workingDir projectDir
-	commandLine 'docker', 'compose', 'up', '-d', 'redis'
-	ignoreExitValue true
+    workingDir projectDir
+    commandLine 'docker', 'compose', 'up', '-d', 'redis'
+    ignoreExitValue true
 }
 
 tasks.register('stopDockerRedis', Exec) {
-	workingDir projectDir
-	commandLine 'docker', 'compose', 'stop', 'redis'
-	ignoreExitValue true
+    workingDir projectDir
+    commandLine 'docker', 'compose', 'stop', 'redis'
+    ignoreExitValue true
 }
 
 tasks.named('bootRun') {
-	dependsOn 'startDockerRedis'
-	finalizedBy 'stopDockerRedis'
-	def envFile = file('.env')
-	if (envFile.exists()) {
-		envFile.readLines().each { line ->
-			def trimmed = line.trim()
-			if (trimmed && !trimmed.startsWith('#') && trimmed.contains('=')) {
-				def parts = trimmed.split('=', 2)
-				environment parts[0].trim(), parts[1].trim()
-			}
-		}
-	}
+    dependsOn 'startDockerRedis'
+    finalizedBy 'stopDockerRedis'
+    def envFile = file('.env')
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            def trimmed = line.trim()
+            if (trimmed && !trimmed.startsWith('#') && trimmed.contains('=')) {
+                def parts = trimmed.split('=', 2)
+                environment parts[0].trim(), parts[1].trim()
+            }
+        }
+    }
 }
 

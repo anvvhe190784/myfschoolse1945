@@ -15,38 +15,39 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+  private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    private final JavaMailSender mailSender;
+  private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username:no-reply@fschool.edu.vn}")
-    private String fromEmail;
+  @Value("${spring.mail.username:no-reply@fschool.edu.vn}")
+  private String fromEmail;
 
-    public EmailService(@Autowired(required = false) JavaMailSender mailSender) {
-        this.mailSender = mailSender;
+  public EmailService(@Autowired(required = false) JavaMailSender mailSender) {
+    this.mailSender = mailSender;
+  }
+
+  /**
+   * Gửi email thật chứa mã xác thực OTP 6 số cho người dùng theo mẫu giao diện hiện đại (đồng bộ).
+   */
+  @Retry(name = "default", fallbackMethod = "sendOtpEmailFallback")
+  public void sendOtpEmail(String toEmail, String otp) {
+    log.info("Bắt đầu gửi email xác thực OTP đến: {}", toEmail);
+
+    if (mailSender == null) {
+      log.warn("JavaMailSender chưa được cấu hình. Bỏ qua gửi email qua SMTP.");
+      return;
     }
 
-    /**
-     * Gửi email thật chứa mã xác thực OTP 6 số cho người dùng theo mẫu giao diện hiện đại (đồng bộ).
-     */
-    @Retry(name = "default", fallbackMethod = "sendOtpEmailFallback")
-    public void sendOtpEmail(String toEmail, String otp) {
-        log.info("Bắt đầu gửi email xác thực OTP đến: {}", toEmail);
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        if (mailSender == null) {
-            log.warn("JavaMailSender chưa được cấu hình. Bỏ qua gửi email qua SMTP.");
-            return;
-        }
+      helper.setFrom(fromEmail, "FPT Schools System");
+      helper.setTo(toEmail);
+      helper.setSubject("[FPT Schools] Mã xác thực OTP đặt lại mật khẩu của bạn");
 
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(fromEmail, "FPT Schools System");
-            helper.setTo(toEmail);
-            helper.setSubject("[FPT Schools] Mã xác thực OTP đặt lại mật khẩu của bạn");
-
-            String htmlTemplate = """
+      String htmlTemplate =
+          """
                 <!DOCTYPE html>
                 <html lang="vi">
                 <head>
@@ -155,33 +156,37 @@ public class EmailService {
                 </html>
                 """;
 
-            String htmlContent = htmlTemplate.replace("{OTP}", otp);
-            helper.setText(htmlContent, true);
+      String htmlContent = htmlTemplate.replace("{OTP}", otp);
+      helper.setText(htmlContent, true);
 
-            // Gắn ảnh inline qua chuẩn Content-ID (CID)
-            ClassPathResource logoResource = new ClassPathResource("mail/fpt_logo.png");
-            if (logoResource.exists()) {
-                helper.addInline("fptLogo", logoResource, "image/png");
-            }
+      // Gắn ảnh inline qua chuẩn Content-ID (CID)
+      ClassPathResource logoResource = new ClassPathResource("mail/fpt_logo.png");
+      if (logoResource.exists()) {
+        helper.addInline("fptLogo", logoResource, "image/png");
+      }
 
-            ClassPathResource heroResource = new ClassPathResource("mail/otp_illustration.png");
-            if (heroResource.exists()) {
-                helper.addInline("heroImage", heroResource, "image/png");
-            }
+      ClassPathResource heroResource = new ClassPathResource("mail/otp_illustration.png");
+      if (heroResource.exists()) {
+        helper.addInline("heroImage", heroResource, "image/png");
+      }
 
-            mailSender.send(message);
-            log.info("Đã gửi thành công email xác thực OTP đến: {}", toEmail);
-        } catch (Exception e) {
-            log.error("Lỗi khi chuẩn bị hoặc gửi email OTP tới {}: {}", toEmail, e.getMessage());
-            throw (e instanceof RuntimeException re) ? re : new MailSendException("Lỗi gửi mail: " + e.getMessage(), e);
-        }
+      mailSender.send(message);
+      log.info("Đã gửi thành công email xác thực OTP đến: {}", toEmail);
+    } catch (Exception e) {
+      log.error("Lỗi khi chuẩn bị hoặc gửi email OTP tới {}: {}", toEmail, e.getMessage());
+      throw (e instanceof RuntimeException re)
+          ? re
+          : new MailSendException("Lỗi gửi mail: " + e.getMessage(), e);
     }
+  }
 
-    /**
-     * Fallback khi @Retry thử lại hết số lần cho phép mà vẫn thất bại hoàn toàn.
-     */
-    public void sendOtpEmailFallback(String toEmail, String otp, Throwable t) {
-        log.error("Hệ thống gửi email OTP tới {} thất bại hoàn toàn sau các lần thử lại: {}", toEmail, t.getMessage());
-        throw new MailSendException("Máy chủ gửi email đang gặp sự cố. Vui lòng thử lại sau giây lát.", t);
-    }
+  /** Fallback khi @Retry thử lại hết số lần cho phép mà vẫn thất bại hoàn toàn. */
+  public void sendOtpEmailFallback(String toEmail, String otp, Throwable t) {
+    log.error(
+        "Hệ thống gửi email OTP tới {} thất bại hoàn toàn sau các lần thử lại: {}",
+        toEmail,
+        t.getMessage());
+    throw new MailSendException(
+        "Máy chủ gửi email đang gặp sự cố. Vui lòng thử lại sau giây lát.", t);
+  }
 }

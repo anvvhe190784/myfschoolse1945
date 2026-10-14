@@ -135,6 +135,32 @@ void main() {
       expect(controller.unreadCount, 0);
       expect(controller.notifications.every((n) => n.isRead), isTrue);
     });
+
+    test('loadMore appends next page items correctly', () async {
+      mockApi.mockNotificationList = List.generate(
+        15,
+        (i) => {
+          'notificationId': 200 + i,
+          'userId': 1,
+          'title': 'Thông báo số $i',
+          'content': 'Nội dung $i',
+          'type': 'GENERAL',
+          'targetId': null,
+          'isRead': false,
+          'createdAt': '2026-10-14T08:00:00Z',
+        },
+      );
+
+      await controller.loadNotifications();
+      expect(controller.notifications.length, 10);
+      expect(controller.hasMore, isTrue);
+      expect(controller.currentPage, 0);
+
+      await controller.loadMore();
+      expect(controller.notifications.length, 15);
+      expect(controller.hasMore, isFalse);
+      expect(controller.currentPage, 1);
+    });
   });
 
   group('NotificationScreen Widget Tests', () {

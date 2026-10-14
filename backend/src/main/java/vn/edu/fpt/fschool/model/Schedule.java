@@ -9,86 +9,146 @@ import java.time.OffsetDateTime;
 @Table(name = "schedules")
 public class Schedule {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "schedule_id")
-    private Long scheduleId;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "schedule_id")
+  private Long scheduleId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id", nullable = false)
-    private ClassEntity classEntity;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "class_id", nullable = false)
+  private ClassEntity classEntity;
 
-    @Column(name = "slot_number", nullable = false)
-    private Integer slotNumber; // 1 to 8
+  @Column(name = "slot_number", nullable = false)
+  private Integer slotNumber; // 1 to 8
 
-    @Column(name = "date", nullable = false)
-    private LocalDate date;
+  @Column(name = "date", nullable = false)
+  private LocalDate date;
 
-    @Column(name = "start_time", nullable = false)
-    private LocalTime startTime;
+  @Column(name = "start_time", nullable = false)
+  private LocalTime startTime;
 
-    @Column(name = "end_time", nullable = false)
-    private LocalTime endTime;
+  @Column(name = "end_time", nullable = false)
+  private LocalTime endTime;
 
-    @Column(name = "room", nullable = false)
-    private String room;
+  @Column(name = "room", nullable = false)
+  private String room;
 
-    @Column(name = "session_no", nullable = false)
-    private Integer sessionNo = 1;
+  @Column(name = "session_no", nullable = false)
+  private Integer sessionNo = 1;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lecturer_id")
-    private User lecturer;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "lecturer_id")
+  private User lecturer;
 
-    @Column(name = "note")
-    private String note;
+  @Column(name = "note")
+  private String note;
 
-    @Column(name = "status", nullable = false)
-    private String status = "UPCOMING"; // 'UPCOMING', 'PRESENT', 'ABSENT', 'CANCELLED'
+  @Column(name = "status", nullable = false)
+  private String status = "UPCOMING"; // 'UPCOMING', 'PRESENT', 'ABSENT', 'CANCELLED'
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private OffsetDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) createdAt = OffsetDateTime.now();
-        if (status == null) status = "UPCOMING";
-        if (sessionNo == null) sessionNo = 1;
-    }
+  @PrePersist
+  protected void onCreate() {
+    if (createdAt == null) createdAt = OffsetDateTime.now();
+    if (status == null) status = "UPCOMING";
+    if (sessionNo == null) sessionNo = 1;
+  }
 
-    public Long getScheduleId() { return scheduleId; }
-    public void setScheduleId(Long scheduleId) { this.scheduleId = scheduleId; }
+  public Long getScheduleId() {
+    return scheduleId;
+  }
 
-    public ClassEntity getClassEntity() { return classEntity; }
-    public void setClassEntity(ClassEntity classEntity) { this.classEntity = classEntity; }
+  public void setScheduleId(Long scheduleId) {
+    this.scheduleId = scheduleId;
+  }
 
-    public Integer getSlotNumber() { return slotNumber; }
-    public void setSlotNumber(Integer slotNumber) { this.slotNumber = slotNumber; }
+  public ClassEntity getClassEntity() {
+    return classEntity;
+  }
 
-    public LocalDate getDate() { return date; }
-    public void setDate(LocalDate date) { this.date = date; }
+  public void setClassEntity(ClassEntity classEntity) {
+    this.classEntity = classEntity;
+  }
 
-    public LocalTime getStartTime() { return startTime; }
-    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+  public Integer getSlotNumber() {
+    return slotNumber;
+  }
 
-    public LocalTime getEndTime() { return endTime; }
-    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+  public void setSlotNumber(Integer slotNumber) {
+    this.slotNumber = slotNumber;
+  }
 
-    public String getRoom() { return room; }
-    public void setRoom(String room) { this.room = room; }
+  public LocalDate getDate() {
+    return date;
+  }
 
-    public Integer getSessionNo() { return sessionNo; }
-    public void setSessionNo(Integer sessionNo) { this.sessionNo = sessionNo; }
+  public void setDate(LocalDate date) {
+    this.date = date;
+  }
 
-    public User getLecturer() { return lecturer; }
-    public void setLecturer(User lecturer) { this.lecturer = lecturer; }
+  public LocalTime getStartTime() {
+    return startTime;
+  }
 
-    public String getNote() { return note; }
-    public void setNote(String note) { this.note = note; }
+  public void setStartTime(LocalTime startTime) {
+    this.startTime = startTime;
+  }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+  public LocalTime getEndTime() {
+    return endTime;
+  }
 
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
+  public void setEndTime(LocalTime endTime) {
+    this.endTime = endTime;
+  }
+
+  public String getRoom() {
+    return room;
+  }
+
+  public void setRoom(String room) {
+    this.room = room;
+  }
+
+  public Integer getSessionNo() {
+    return sessionNo;
+  }
+
+  public void setSessionNo(Integer sessionNo) {
+    this.sessionNo = sessionNo;
+  }
+
+  public User getLecturer() {
+    return lecturer;
+  }
+
+  public void setLecturer(User lecturer) {
+    this.lecturer = lecturer;
+  }
+
+  public String getNote() {
+    return note;
+  }
+
+  public void setNote(String note) {
+    this.note = note;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
+
+  public OffsetDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(OffsetDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
 }

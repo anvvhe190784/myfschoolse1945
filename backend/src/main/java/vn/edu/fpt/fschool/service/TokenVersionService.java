@@ -11,8 +11,8 @@ import vn.edu.fpt.fschool.model.User;
 import vn.edu.fpt.fschool.repository.UserRepository;
 
 /**
- * Service quản lý và xác thực token_version của người dùng.
- * Sử dụng Redis để kiểm tra nhanh (< 1ms) với fallback in-memory và database query khi cache miss.
+ * Service quản lý và xác thực token_version của người dùng. Sử dụng Redis để kiểm tra nhanh (< 1ms)
+ * với fallback in-memory và database query khi cache miss.
  */
 @Service
 @Slf4j
@@ -34,8 +34,8 @@ public class TokenVersionService {
   }
 
   /**
-   * Kiểm tra xem tokenVersion trong JWT có hợp lệ không.
-   * Nếu nhỏ hơn currentVersion (mật khẩu đã bị đổi), trả về false để từ chối ngay.
+   * Kiểm tra xem tokenVersion trong JWT có hợp lệ không. Nếu nhỏ hơn currentVersion (mật khẩu đã bị
+   * đổi), trả về false để từ chối ngay.
    */
   public boolean isTokenVersionValid(String email, Integer tokenVersionInJwt) {
     if (email == null || tokenVersionInJwt == null) {
@@ -45,9 +45,7 @@ public class TokenVersionService {
     return tokenVersionInJwt >= currentVersion;
   }
 
-  /**
-   * Lấy token_version hiện tại của người dùng (ưu tiên Redis, cache miss thì query DB).
-   */
+  /** Lấy token_version hiện tại của người dùng (ưu tiên Redis, cache miss thì query DB). */
   public int getCurrentTokenVersion(String email) {
     String normalizedEmail = email.trim().toLowerCase();
     String key = TOKEN_VERSION_PREFIX + normalizedEmail;
@@ -69,17 +67,14 @@ public class TokenVersionService {
     }
 
     // Cache miss -> Query DB và nạp lại vào Redis
-    int dbVersion = userRepository.findByEmailIgnoreCase(normalizedEmail)
-        .map(User::getTokenVersion)
-        .orElse(1);
+    int dbVersion =
+        userRepository.findByEmailIgnoreCase(normalizedEmail).map(User::getTokenVersion).orElse(1);
 
     updateUserTokenVersion(normalizedEmail, dbVersion);
     return dbVersion;
   }
 
-  /**
-   * Cập nhật token_version mới vào Redis khi người dùng đổi mật khẩu.
-   */
+  /** Cập nhật token_version mới vào Redis khi người dùng đổi mật khẩu. */
   public void updateUserTokenVersion(String email, int newVersion) {
     if (email == null) return;
     String normalizedEmail = email.trim().toLowerCase();
@@ -88,7 +83,8 @@ public class TokenVersionService {
     if (stringRedisTemplate != null) {
       try {
         stringRedisTemplate.opsForValue().set(key, String.valueOf(newVersion), Duration.ofDays(7));
-        log.debug("Đã cập nhật token_version={} cho user={} vào Redis", newVersion, normalizedEmail);
+        log.debug(
+            "Đã cập nhật token_version={} cho user={} vào Redis", newVersion, normalizedEmail);
       } catch (Exception e) {
         log.error("Lỗi khi cập nhật token_version vào Redis: {}", e.getMessage());
         inMemoryTokenVersionStore.put(normalizedEmail, newVersion);
@@ -98,16 +94,15 @@ public class TokenVersionService {
     }
   }
 
-  /**
-   * Xóa cache token_version (khi cần reset)
-   */
+  /** Xóa cache token_version (khi cần reset) */
   public void evictTokenVersion(String email) {
     if (email == null) return;
     String normalizedEmail = email.trim().toLowerCase();
     if (stringRedisTemplate != null) {
       try {
         stringRedisTemplate.delete(TOKEN_VERSION_PREFIX + normalizedEmail);
-      } catch (Exception ignored) {}
+      } catch (Exception ignored) {
+      }
     }
     inMemoryTokenVersionStore.remove(normalizedEmail);
   }

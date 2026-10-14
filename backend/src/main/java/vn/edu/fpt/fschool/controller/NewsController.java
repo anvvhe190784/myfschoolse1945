@@ -26,8 +26,8 @@ public class NewsController {
 
   @GetMapping
   @Operation(summary = "Danh sách tin tức (Use Case 8: ListNews)", description = "Xem danh sách các bài viết tin tức và thông báo mới nhất")
-  public ResponseEntity<List<NewsResponse>> getAllNews() {
-    return ResponseEntity.ok(newsService.getAllPublishedNews());
+  public ResponseEntity<List<NewsResponse>> getAllNews(@RequestParam(required = false) Integer limit) {
+    return ResponseEntity.ok(newsService.getAllPublishedNews(limit));
   }
 
   @GetMapping("/{id}")

@@ -23,9 +23,17 @@ public class NewsService {
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional(readOnly = true)
+  public List<NewsResponse> getAllPublishedNews(Integer limit) {
+    List<News> list = newsRepository.findByIsPublishedTrueOrderByPublishedAtDesc();
+    if (limit != null && limit > 0) {
+      list = list.stream().limit(limit).toList();
+    }
+    return list.stream().map(this::toResponse).toList();
+  }
+
+  @Transactional(readOnly = true)
   public List<NewsResponse> getAllPublishedNews() {
-    return newsRepository.findByIsPublishedTrueOrderByPublishedAtDesc()
-        .stream().map(this::toResponse).toList();
+    return getAllPublishedNews(null);
   }
 
   @Transactional

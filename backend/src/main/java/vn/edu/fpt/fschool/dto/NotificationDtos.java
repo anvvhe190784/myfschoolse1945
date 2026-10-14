@@ -13,8 +13,7 @@ public class NotificationDtos {
       String type,
       Long targetId,
       Boolean isRead,
-      OffsetDateTime createdAt
-  ) {
+      OffsetDateTime createdAt) {
     public static NotificationResponse from(Notification n) {
       return new NotificationResponse(
           n.getNotificationId(),
@@ -24,12 +23,9 @@ public class NotificationDtos {
           n.getType(),
           n.getTargetId(),
           n.getIsRead(),
-          n.getCreatedAt()
-      );
+          n.getCreatedAt());
     }
   }
 
-  public record UnreadCountResponse(
-      long unreadCount
-  ) {}
+  public record UnreadCountResponse(long unreadCount) {}
 }

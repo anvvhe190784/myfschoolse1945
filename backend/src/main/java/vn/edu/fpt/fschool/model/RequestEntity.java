@@ -7,92 +7,154 @@ import java.time.OffsetDateTime;
 @Table(name = "requests")
 public class RequestEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "request_id")
-    private Long requestId;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "request_id")
+  private Long requestId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", nullable = false)
-    private User student;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "student_id", nullable = false)
+  private User student;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requester_id", nullable = false)
-    private User requester;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "requester_id", nullable = false)
+  private User requester;
 
-    @Column(name = "request_type", nullable = false)
-    private String requestType; // 'ATTENDANCE_EXEMPTION', 'COURSE_WITHDRAWAL', 'LEAVE_OF_ABSENCE', 'GRADE_REVIEW', 'CERTIFICATE_REQUEST', 'OTHER'
+  @Column(name = "request_type", nullable = false)
+  private String requestType; // 'ATTENDANCE_EXEMPTION', 'COURSE_WITHDRAWAL', 'LEAVE_OF_ABSENCE',
 
-    @Column(name = "title", nullable = false)
-    private String title;
+  // 'GRADE_REVIEW', 'CERTIFICATE_REQUEST', 'OTHER'
 
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
-    private String content;
+  @Column(name = "title", nullable = false)
+  private String title;
 
-    @Column(name = "attachment_url")
-    private String attachmentUrl;
+  @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+  private String content;
 
-    @Column(name = "status", nullable = false)
-    private String status = "PENDING"; // 'PENDING', 'PROCESSING', 'APPROVED', 'REJECTED'
+  @Column(name = "attachment_url")
+  private String attachmentUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "handler_id")
-    private User handler;
+  @Column(name = "status", nullable = false)
+  private String status = "PENDING"; // 'PENDING', 'PROCESSING', 'APPROVED', 'REJECTED'
 
-    @Column(name = "response_note", columnDefinition = "TEXT")
-    private String responseNote;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "handler_id")
+  private User handler;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+  @Column(name = "response_note", columnDefinition = "TEXT")
+  private String responseNote;
 
-    @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private OffsetDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) createdAt = OffsetDateTime.now();
-        if (updatedAt == null) updatedAt = OffsetDateTime.now();
-        if (status == null) status = "PENDING";
-    }
+  @Column(name = "updated_at", nullable = false)
+  private OffsetDateTime updatedAt;
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = OffsetDateTime.now();
-    }
+  @PrePersist
+  protected void onCreate() {
+    if (createdAt == null) createdAt = OffsetDateTime.now();
+    if (updatedAt == null) updatedAt = OffsetDateTime.now();
+    if (status == null) status = "PENDING";
+  }
 
-    public Long getRequestId() { return requestId; }
-    public void setRequestId(Long requestId) { this.requestId = requestId; }
+  @PreUpdate
+  protected void onUpdate() {
+    updatedAt = OffsetDateTime.now();
+  }
 
-    public User getStudent() { return student; }
-    public void setStudent(User student) { this.student = student; }
+  public Long getRequestId() {
+    return requestId;
+  }
 
-    public User getRequester() { return requester; }
-    public void setRequester(User requester) { this.requester = requester; }
+  public void setRequestId(Long requestId) {
+    this.requestId = requestId;
+  }
 
-    public String getRequestType() { return requestType; }
-    public void setRequestType(String requestType) { this.requestType = requestType; }
+  public User getStudent() {
+    return student;
+  }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+  public void setStudent(User student) {
+    this.student = student;
+  }
 
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
+  public User getRequester() {
+    return requester;
+  }
 
-    public String getAttachmentUrl() { return attachmentUrl; }
-    public void setAttachmentUrl(String attachmentUrl) { this.attachmentUrl = attachmentUrl; }
+  public void setRequester(User requester) {
+    this.requester = requester;
+  }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+  public String getRequestType() {
+    return requestType;
+  }
 
-    public User getHandler() { return handler; }
-    public void setHandler(User handler) { this.handler = handler; }
+  public void setRequestType(String requestType) {
+    this.requestType = requestType;
+  }
 
-    public String getResponseNote() { return responseNote; }
-    public void setResponseNote(String responseNote) { this.responseNote = responseNote; }
+  public String getTitle() {
+    return title;
+  }
 
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
+  public void setTitle(String title) {
+    this.title = title;
+  }
 
-    public OffsetDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
+  public String getContent() {
+    return content;
+  }
+
+  public void setContent(String content) {
+    this.content = content;
+  }
+
+  public String getAttachmentUrl() {
+    return attachmentUrl;
+  }
+
+  public void setAttachmentUrl(String attachmentUrl) {
+    this.attachmentUrl = attachmentUrl;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
+
+  public User getHandler() {
+    return handler;
+  }
+
+  public void setHandler(User handler) {
+    this.handler = handler;
+  }
+
+  public String getResponseNote() {
+    return responseNote;
+  }
+
+  public void setResponseNote(String responseNote) {
+    this.responseNote = responseNote;
+  }
+
+  public OffsetDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(OffsetDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  public OffsetDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(OffsetDateTime updatedAt) {
+    this.updatedAt = updatedAt;
+  }
 }
