@@ -1,0 +1,36 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.history
+
+# IDEs
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+
+# Mobile (Flutter / Dart)
+**/build/
+**/.dart_tool/
+**/.flutter-plugins*
+**/.pub-cache/
+**/.pub/
+**/coverage/
+**/doc/api/
+**/.widget_preview/
+
+# Backend (Java / Spring Boot / Gradle)
+**/.gradle/
+!**/gradle/wrapper/gradle-wrapper.jar
+**/out/
+**/bin/
+
+# Environment files and credentials
+*.env
+.env
+.env.*
+!.env.example
