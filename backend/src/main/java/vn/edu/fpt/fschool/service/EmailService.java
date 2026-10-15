@@ -10,6 +10,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,8 +28,10 @@ public class EmailService {
   }
 
   /**
-   * Gửi email thật chứa mã xác thực OTP 6 số cho người dùng theo mẫu giao diện hiện đại (đồng bộ).
+   * Gửi email thật chứa mã xác thực OTP 6 số cho người dùng theo mẫu giao diện hiện đại (bất đồng
+   * bộ).
    */
+  @Async
   @Retry(name = "default", fallbackMethod = "sendOtpEmailFallback")
   public void sendOtpEmail(String toEmail, String otp) {
     log.info("Bắt đầu gửi email xác thực OTP đến: {}", toEmail);
@@ -173,14 +176,15 @@ public class EmailService {
       mailSender.send(message);
       log.info("Đã gửi thành công email xác thực OTP đến: {}", toEmail);
     } catch (Exception e) {
-      log.error("Lỗi khi chuẩn bị hoặc gửi email OTP tới {}: {}", toEmail, e.getMessage());
-      throw (e instanceof RuntimeException re)
-          ? re
-          : new MailSendException("Lỗi gửi mail: " + e.getMessage(), e);
+      throw new MailSendException(
+          "Lỗi khi chuẩn bị hoặc gửi email OTP tới " + toEmail + ": " + e.getMessage(), e);
     }
   }
 
   /** Fallback khi @Retry thử lại hết số lần cho phép mà vẫn thất bại hoàn toàn. */
+  @SuppressWarnings(
+      "java:S1172") // Parameter 'otp' is required by Resilience4j @Retry fallbackMethod signature
+  // contract
   public void sendOtpEmailFallback(String toEmail, String otp, Throwable t) {
     log.error(
         "Hệ thống gửi email OTP tới {} thất bại hoàn toàn sau các lần thử lại: {}",

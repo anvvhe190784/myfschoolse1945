@@ -16,6 +16,7 @@ class VerifyEmailController extends ChangeNotifier {
   int _secondsRemaining = 45;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _resetToken;
 
   VerifyEmailController({
     required this.email,
@@ -38,6 +39,7 @@ class VerifyEmailController extends ChangeNotifier {
   bool get canResend => _secondsRemaining == 0;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String? get resetToken => _resetToken;
 
   String get currentOtp => controllers.map((c) => c.text).join();
   bool get isOtpComplete => currentOtp.length == otpLength;
@@ -58,7 +60,8 @@ class VerifyEmailController extends ChangeNotifier {
   }
 
   Future<bool> resendCode() async {
-    if (!canResend) return false;
+    if (!canResend || _isLoading) return false;
+    _isLoading = true;
     for (final controller in controllers) {
       controller.clear();
     }
@@ -67,9 +70,11 @@ class VerifyEmailController extends ChangeNotifier {
 
     try {
       await apiClient.forgotPassword(email: email);
+      _isLoading = false;
       startTimer();
       return true;
     } catch (e) {
+      _isLoading = false;
       _errorMessage =
           e is ApiException ? e.message : 'Không thể gửi lại mã: $e';
       notifyListeners();
@@ -115,7 +120,8 @@ class VerifyEmailController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await apiClient.verifyOtp(email: email, otp: currentOtp);
+      final res = await apiClient.verifyOtp(email: email, otp: currentOtp);
+      _resetToken = res['resetToken'] as String?;
       _isLoading = false;
       notifyListeners();
       return true;

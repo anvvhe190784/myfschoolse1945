@@ -2,6 +2,9 @@ package vn.edu.fpt.fschool.model;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(
@@ -11,6 +14,8 @@ import java.time.OffsetDateTime;
           name = "uq_class_course_semester",
           columnNames = {"class_code", "course_id", "semester"})
     })
+@Getter
+@Setter
 public class ClassEntity {
 
   @Id
@@ -43,71 +48,7 @@ public class ClassEntity {
 
   @PrePersist
   protected void onCreate() {
-    if (createdAt == null) createdAt = OffsetDateTime.now();
+    if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
     if (academicYear == null) academicYear = 2026;
-  }
-
-  public Long getClassId() {
-    return classId;
-  }
-
-  public void setClassId(Long classId) {
-    this.classId = classId;
-  }
-
-  public String getClassCode() {
-    return classCode;
-  }
-
-  public void setClassCode(String classCode) {
-    this.classCode = classCode;
-  }
-
-  public Course getCourse() {
-    return course;
-  }
-
-  public void setCourse(Course course) {
-    this.course = course;
-  }
-
-  public User getLecturer() {
-    return lecturer;
-  }
-
-  public void setLecturer(User lecturer) {
-    this.lecturer = lecturer;
-  }
-
-  public String getSemester() {
-    return semester;
-  }
-
-  public void setSemester(String semester) {
-    this.semester = semester;
-  }
-
-  public Integer getAcademicYear() {
-    return academicYear;
-  }
-
-  public void setAcademicYear(Integer academicYear) {
-    this.academicYear = academicYear;
-  }
-
-  public String getRoomDefault() {
-    return roomDefault;
-  }
-
-  public void setRoomDefault(String roomDefault) {
-    this.roomDefault = roomDefault;
-  }
-
-  public OffsetDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(OffsetDateTime createdAt) {
-    this.createdAt = createdAt;
   }
 }

@@ -3,7 +3,6 @@ package vn.edu.fpt.fschool.event;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,7 +29,6 @@ class NotificationEventListenerTest {
   @InjectMocks private NotificationEventListener eventListener;
 
   private User student1;
-  private User student2;
 
   @BeforeEach
   void setUp() {
@@ -39,14 +37,6 @@ class NotificationEventListenerTest {
             .userId(1L)
             .email("student1@fpt.edu.vn")
             .fullName("Nguyen Van A")
-            .role("STUDENT")
-            .build();
-
-    student2 =
-        User.builder()
-            .userId(2L)
-            .email("student2@fpt.edu.vn")
-            .fullName("Tran Thi B")
             .role("STUDENT")
             .build();
   }
@@ -71,24 +61,42 @@ class NotificationEventListenerTest {
 
   @Test
   @DisplayName(
-      "Event: NewsPublishedEvent kích hoạt batch insert thông báo NEWS cho tất cả học sinh")
-  void onNewsPublished_shouldBroadcastToAllStudents() {
-    when(userRepository.findByRole("STUDENT")).thenReturn(List.of(student1, student2));
-
+      "Event: NewsPublishedEvent tạo đúng 1 bản ghi thông báo Broadcast toàn trường (user = null)")
+  void onNewsPublished_shouldCreateSingleBroadcastNotification() {
     eventListener.onNewsPublished(
         new NewsPublishedEvent(42L, "Lịch thi mới", "Chi tiết ca thi đã có"));
 
-    @SuppressWarnings("unchecked")
-    ArgumentCaptor<List<Notification>> captor = ArgumentCaptor.forClass(List.class);
-    verify(notificationRepository, times(1)).saveAll(captor.capture());
+    ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+    verify(notificationRepository, times(1)).save(captor.capture());
 
-    List<Notification> savedList = captor.getValue();
-    assertEquals(2, savedList.size());
-    for (Notification n : savedList) {
-      assertEquals("NEWS", n.getType());
-      assertEquals(42L, n.getTargetId());
-      assertFalse(n.getIsRead());
-      assertTrue(n.getTitle().contains("Lịch thi mới"));
-    }
+    Notification saved = captor.getValue();
+    assertNotNull(saved);
+    assertNull(saved.getUser()); // Broadcast notification: user is null
+    assertEquals("NEWS", saved.getType());
+    assertEquals(42L, saved.getTargetId());
+    assertFalse(saved.getIsRead());
+    assertTrue(saved.getTitle().contains("Lịch thi mới"));
+  }
+
+  @Test
+  @DisplayName(
+      "Lỗi #2: RequestProcessedEvent tạo thông báo trực tiếp cho requester sau khi đơn được duyệt")
+  void onRequestProcessed_shouldCreateNotificationForRequester() {
+    when(userRepository.findById(1L)).thenReturn(Optional.of(student1));
+
+    eventListener.onRequestProcessed(
+        new RequestProcessedEvent(
+            100L, 1L, "Đơn xin nghỉ ốm", "PENDING", "APPROVED", "Đã duyệt đơn"));
+
+    ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+    verify(notificationRepository, times(1)).save(captor.capture());
+
+    Notification saved = captor.getValue();
+    assertNotNull(saved);
+    assertEquals(student1, saved.getUser());
+    assertEquals("REQUEST", saved.getType());
+    assertEquals(100L, saved.getTargetId());
+    assertTrue(saved.getContent().contains("ĐÃ ĐƯỢC PHÊ DUYỆT"));
+    assertTrue(saved.getContent().contains("Đã duyệt đơn"));
   }
 }

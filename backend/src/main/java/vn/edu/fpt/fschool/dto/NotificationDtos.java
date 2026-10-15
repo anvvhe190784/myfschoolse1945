@@ -15,6 +15,10 @@ public class NotificationDtos {
       Boolean isRead,
       OffsetDateTime createdAt) {
     public static NotificationResponse from(Notification n) {
+      return from(n, Boolean.TRUE.equals(n.getIsRead()));
+    }
+
+    public static NotificationResponse from(Notification n, boolean isRead) {
       return new NotificationResponse(
           n.getNotificationId(),
           n.getUser() != null ? n.getUser().getUserId() : null,
@@ -22,7 +26,7 @@ public class NotificationDtos {
           n.getContent(),
           n.getType(),
           n.getTargetId(),
-          n.getIsRead(),
+          isRead,
           n.getCreatedAt());
     }
   }

@@ -6,6 +6,7 @@ class ResetPasswordController extends ChangeNotifier {
   final ApiClient apiClient;
   final String email;
   final String otp;
+  final String? resetToken;
 
   final TextEditingController newPasswordController;
   final TextEditingController confirmPasswordController;
@@ -19,6 +20,7 @@ class ResetPasswordController extends ChangeNotifier {
   ResetPasswordController({
     required this.email,
     this.otp = '',
+    this.resetToken,
     ApiClient? apiClient,
     TextEditingController? newPasswordController,
     TextEditingController? confirmPasswordController,
@@ -75,6 +77,7 @@ class ResetPasswordController extends ChangeNotifier {
       await apiClient.resetPassword(
         email: email,
         otp: otp,
+        resetToken: resetToken,
         newPassword: newPasswordController.text,
       );
       _isLoading = false;

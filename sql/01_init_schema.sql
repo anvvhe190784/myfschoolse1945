@@ -192,7 +192,7 @@ CREATE INDEX IF NOT EXISTS idx_news_published_at ON news (published_at DESC);
 -- 12. NOTIFICATIONS TABLE
 CREATE TABLE IF NOT EXISTS notifications (
     notification_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id BIGINT REFERENCES users(user_id) ON DELETE CASCADE, -- NULL for Broadcast notifications
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('NEWS', 'SECURITY', 'ACADEMIC', 'REQUEST', 'SYSTEM')),
@@ -203,3 +203,14 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications (user_id, is_read);
+
+-- 13. NOTIFICATION_READS TABLE
+CREATE TABLE IF NOT EXISTS notification_reads (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    notification_id BIGINT NOT NULL REFERENCES notifications(notification_id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    read_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT uq_notification_user_read UNIQUE (notification_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_notification_reads_user_id ON notification_reads (user_id);

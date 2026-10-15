@@ -1,7 +1,8 @@
 package vn.edu.fpt.fschool.service;
 
+import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,8 +17,15 @@ import vn.edu.fpt.fschool.repository.UserRepository;
 @Service
 public class AuthService {
 
-  private static final String OTP_PREFIX = "otp:reset:";
-  private static final long OTP_EXPIRATION_MINUTES = 5;
+  public static final String OTP_PREFIX = "otp:reset:";
+  public static final String OTP_COOLDOWN_PREFIX = "otp:cooldown:";
+  public static final String OTP_ATTEMPTS_PREFIX = "otp:attempts:";
+  public static final String RESET_TOKEN_PREFIX = "otp:token:";
+  public static final int MAX_OTP_ATTEMPTS = 5;
+  public static final long OTP_EXPIRATION_MINUTES = 5;
+  public static final long OTP_COOLDOWN_SECONDS = 60;
+  private static final String ERR_USER_NOT_FOUND_EMAIL = "Không tìm thấy người dùng với email: ";
+  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
@@ -69,6 +77,8 @@ public class AuthService {
       throw new IllegalStateException("Tài khoản của bạn đã bị khóa hoặc chưa được kích hoạt");
     }
 
+    tokenVersionService.updateUserTokenVersion(user.getEmail(), user.getTokenVersion());
+
     String accessToken =
         jwtUtils.generateAccessToken(
             user.getUserId(), user.getEmail(), user.getRole(), user.getTokenVersion());
@@ -101,6 +111,7 @@ public class AuthService {
           refreshTokenService.revokeAllUserTokens(compromisedEmail);
         }
       } catch (Exception ignored) {
+        // Token is completely unparseable or malformed, safe to ignore
       }
       throw new IllegalArgumentException("Refresh token không hợp lệ hoặc đã hết hạn");
     }
@@ -133,35 +144,55 @@ public class AuthService {
 
   public MessageResponse forgotPassword(ForgotPasswordRequest req) {
     String email = req.email().trim();
-    User user =
-        userRepository
-            .findByEmailIgnoreCase(email)
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException("Không tìm thấy người dùng với email: " + email));
+    java.util.Optional<User> userOpt = userRepository.findByEmailIgnoreCase(email);
 
-    // Sinh mã OTP 6 chữ số ngẫu nhiên
-    String otp = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
+    // Chống dò quét email (Email Enumeration Mitigation): Trả về thông báo trung lập nếu user không
+    // tồn tại
+    if (userOpt.isEmpty()) {
+      return new MessageResponse(
+          "Nếu email tồn tại trong hệ thống, Mã xác thực OTP đã được gửi đến hòm thư của bạn.",
+          true);
+    }
+
+    User user = userOpt.get();
+    String emailKey = user.getEmail().toLowerCase();
+    String cooldownKey = OTP_COOLDOWN_PREFIX + emailKey;
+
+    Boolean hasCooldown = stringRedisTemplate.hasKey(cooldownKey);
+    if (Boolean.TRUE.equals(hasCooldown)) {
+      Long expireSeconds = stringRedisTemplate.getExpire(cooldownKey, TimeUnit.SECONDS);
+      long waitSeconds =
+          (expireSeconds != null && expireSeconds > 0) ? expireSeconds : OTP_COOLDOWN_SECONDS;
+      throw new IllegalStateException(
+          "Mã xác thực đã được gửi. Vui lòng đợi "
+              + waitSeconds
+              + " giây trước khi yêu cầu mã mới.");
+    }
+
+    // Sinh mã OTP 6 chữ số ngẫu nhiên an toàn bằng SecureRandom
+    String otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
     stringRedisTemplate
         .opsForValue()
-        .set(
-            OTP_PREFIX + user.getEmail().toLowerCase(),
-            otp,
-            Duration.ofMinutes(OTP_EXPIRATION_MINUTES));
+        .set(OTP_PREFIX + emailKey, otp, Duration.ofMinutes(OTP_EXPIRATION_MINUTES));
 
-    // Gửi email OTP ngoài transaction để tránh nghẽn database connection pool
+    // Reset attempts counter khi tạo OTP mới
+    stringRedisTemplate.delete(OTP_ATTEMPTS_PREFIX + emailKey);
+
+    // Đặt cooldown 60 giây chống spam gửi mã liên tục
+    stringRedisTemplate
+        .opsForValue()
+        .set(cooldownKey, "1", Duration.ofSeconds(OTP_COOLDOWN_SECONDS));
+
+    // Gửi email OTP ngầm (bất đồng bộ)
     emailService.sendOtpEmail(user.getEmail(), otp);
 
-    return new MessageResponse("Mã xác thực OTP đã được gửi đến email của bạn.", true);
+    return new MessageResponse(
+        "Nếu email tồn tại trong hệ thống, Mã xác thực OTP đã được gửi đến hòm thư của bạn.", true);
   }
 
-  public MessageResponse verifyOtp(VerifyOtpRequest req) {
+  public VerifyOtpResponse verifyOtp(VerifyOtpRequest req) {
     String email = req.email().trim().toLowerCase();
     String otp = req.otp().trim();
-
-    if (!userRepository.existsByEmail(email)) {
-      throw new IllegalArgumentException("Không tìm thấy người dùng với email: " + email);
-    }
 
     String savedOtp = stringRedisTemplate.opsForValue().get(OTP_PREFIX + email);
     if (savedOtp == null) {
@@ -169,42 +200,83 @@ public class AuthService {
           "Mã xác thực OTP đã hết hạn hoặc chưa được tạo. Vui lòng yêu cầu mã mới");
     }
 
-    if (!savedOtp.equals(otp)) {
-      throw new IllegalArgumentException("Mã xác thực OTP không chính xác");
+    // Anti brute-force protection (tối đa 5 lần thử)
+    Long attempts = stringRedisTemplate.opsForValue().increment(OTP_ATTEMPTS_PREFIX + email);
+    if (attempts != null && attempts == 1) {
+      stringRedisTemplate.expire(
+          OTP_ATTEMPTS_PREFIX + email, Duration.ofMinutes(OTP_EXPIRATION_MINUTES));
     }
 
-    return new MessageResponse("Xác thực OTP thành công!", true);
+    if (attempts != null && attempts > MAX_OTP_ATTEMPTS) {
+      stringRedisTemplate.delete(OTP_PREFIX + email);
+      stringRedisTemplate.delete(OTP_ATTEMPTS_PREFIX + email);
+      throw new IllegalArgumentException(
+          "Bạn đã nhập sai mã OTP quá 5 lần. Mã xác thực đã bị vô hiệu hóa vì lý do an toàn, vui lòng yêu cầu mã mới.");
+    }
+
+    if (!savedOtp.equals(otp)) {
+      long remaining = MAX_OTP_ATTEMPTS - (attempts != null ? attempts : 0);
+      throw new IllegalArgumentException(
+          "Mã xác thực OTP không chính xác. Bạn còn " + remaining + " lần thử.");
+    }
+
+    // Thành công: Xóa OTP, xóa attempts counter và cấp One-Time Reset Token (5 phút)
+    stringRedisTemplate.delete(OTP_PREFIX + email);
+    stringRedisTemplate.delete(OTP_ATTEMPTS_PREFIX + email);
+
+    String resetToken = java.util.UUID.randomUUID().toString();
+    stringRedisTemplate
+        .opsForValue()
+        .set(RESET_TOKEN_PREFIX + resetToken, email, Duration.ofMinutes(5));
+
+    return new VerifyOtpResponse("Xác thực OTP thành công!", true, resetToken);
   }
 
   @Transactional
   public MessageResponse resetPassword(ResetPasswordRequest req) {
-    String email = req.email().trim().toLowerCase();
-    String otp = req.otp().trim();
+    String targetEmail = null;
 
+    if (req.resetToken() != null && !req.resetToken().isBlank()) {
+      // Xác thực bằng One-Time Reset Token (atomic getAndDelete)
+      targetEmail =
+          stringRedisTemplate
+              .opsForValue()
+              .getAndDelete(RESET_TOKEN_PREFIX + req.resetToken().trim());
+      if (targetEmail == null) {
+        throw new IllegalArgumentException("Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
+      }
+    } else if (req.email() != null && req.otp() != null) {
+      // Hỗ trợ luồng cũ (email + otp) để backward compatibility
+      String email = req.email().trim().toLowerCase();
+      String otp = req.otp().trim();
+      String savedOtp = stringRedisTemplate.opsForValue().get(OTP_PREFIX + email);
+      if (savedOtp == null) {
+        throw new IllegalArgumentException(
+            "Mã xác thực OTP đã hết hạn hoặc chưa được tạo. Vui lòng yêu cầu mã mới");
+      }
+      if (!savedOtp.equals(otp)) {
+        throw new IllegalArgumentException(
+            "Mã xác thực OTP không chính xác hoặc chưa được xác thực");
+      }
+      stringRedisTemplate.delete(OTP_PREFIX + email);
+      targetEmail = email;
+    } else {
+      throw new IllegalArgumentException("Vui lòng cung cấp mã xác thực hoặc reset token hợp lệ");
+    }
+
+    final String resolvedEmail = targetEmail;
     User user =
         userRepository
-            .findByEmailIgnoreCase(email)
+            .findByEmailIgnoreCase(resolvedEmail)
             .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "Không tìm thấy người dùng với email: " + req.email()));
-
-    String savedOtp = stringRedisTemplate.opsForValue().get(OTP_PREFIX + email);
-    if (savedOtp == null) {
-      throw new IllegalArgumentException(
-          "Mã xác thực OTP đã hết hạn hoặc chưa được tạo. Vui lòng yêu cầu mã mới");
-    }
-
-    if (!savedOtp.equals(otp)) {
-      throw new IllegalArgumentException("Mã xác thực OTP không chính xác hoặc chưa được xác thực");
-    }
+                () -> new IllegalArgumentException(ERR_USER_NOT_FOUND_EMAIL + resolvedEmail));
 
     user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
     user.setTokenVersion(user.getTokenVersion() != null ? user.getTokenVersion() + 1 : 2);
     userRepository.save(user);
 
-    // Hủy mã OTP sau khi reset mật khẩu thành công
-    stringRedisTemplate.delete(OTP_PREFIX + email);
+    // Hủy khóa cooldown sau khi reset mật khẩu thành công
+    stringRedisTemplate.delete(OTP_COOLDOWN_PREFIX + resolvedEmail);
 
     // Cập nhật token_version vào Redis để chặn ngay Access Token cũ
     tokenVersionService.updateUserTokenVersion(user.getEmail(), user.getTokenVersion());
@@ -225,9 +297,7 @@ public class AuthService {
         userRepository
             .findByEmailIgnoreCase(email)
             .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "Không tìm thấy người dùng với email: " + authenticatedEmail));
+                () -> new IllegalArgumentException(ERR_USER_NOT_FOUND_EMAIL + authenticatedEmail));
 
     if (!passwordEncoder.matches(req.oldPassword(), user.getPasswordHash())) {
       throw new IllegalArgumentException("Mật khẩu hiện tại không chính xác");
@@ -263,8 +333,8 @@ public class AuthService {
     return new MessageResponse("Đăng xuất thành công!", true);
   }
 
-  public MessageResponse logout(String token) {
-    return logout(token, null);
+  public void logout(String token) {
+    logout(token, null);
   }
 
   @Transactional(readOnly = true)

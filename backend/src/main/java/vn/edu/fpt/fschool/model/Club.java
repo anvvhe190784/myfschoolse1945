@@ -2,9 +2,14 @@ package vn.edu.fpt.fschool.model;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "clubs")
+@Getter
+@Setter
 public class Club {
 
   @Id
@@ -46,96 +51,8 @@ public class Club {
 
   @PrePersist
   protected void onCreate() {
-    if (createdAt == null) createdAt = OffsetDateTime.now();
+    if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
     if (memberCount == null) memberCount = 1;
     if (isActive == null) isActive = true;
-  }
-
-  public Long getClubId() {
-    return clubId;
-  }
-
-  public void setClubId(Long clubId) {
-    this.clubId = clubId;
-  }
-
-  public String getClubName() {
-    return clubName;
-  }
-
-  public void setClubName(String clubName) {
-    this.clubName = clubName;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public String getCategory() {
-    return category;
-  }
-
-  public void setCategory(String category) {
-    this.category = category;
-  }
-
-  public String getAvatarUrl() {
-    return avatarUrl;
-  }
-
-  public void setAvatarUrl(String avatarUrl) {
-    this.avatarUrl = avatarUrl;
-  }
-
-  public String getBannerUrl() {
-    return bannerUrl;
-  }
-
-  public void setBannerUrl(String bannerUrl) {
-    this.bannerUrl = bannerUrl;
-  }
-
-  public User getLeader() {
-    return leader;
-  }
-
-  public void setLeader(User leader) {
-    this.leader = leader;
-  }
-
-  public String getContactEmail() {
-    return contactEmail;
-  }
-
-  public void setContactEmail(String contactEmail) {
-    this.contactEmail = contactEmail;
-  }
-
-  public Integer getMemberCount() {
-    return memberCount;
-  }
-
-  public void setMemberCount(Integer memberCount) {
-    this.memberCount = memberCount;
-  }
-
-  public Boolean getIsActive() {
-    return isActive;
-  }
-
-  public void setIsActive(Boolean isActive) {
-    this.isActive = isActive;
-  }
-
-  public OffsetDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(OffsetDateTime createdAt) {
-    this.createdAt = createdAt;
   }
 }

@@ -1,11 +1,11 @@
 {
-  "name": "myfschoolse1945",
-  "short_name": "myfschoolse1945",
+  "name": "F-School",
+  "short_name": "F-School",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0175C2",
-  "theme_color": "#0175C2",
-  "description": "A new Flutter project.",
+  "background_color": "#FFFFFF",
+  "theme_color": "#F5A623",
+  "description": "F-School - Cổng thông tin học sinh Trường THPT FPT",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [

@@ -1,0 +1,639 @@
+{
+  "info": {
+    "_postman_id": "f83a6912-10a4-47b8-b472-83b6329e4720",
+    "name": "F-School Admin Database API",
+    "description": "Bộ công cụ Postman chuyên dụng dành cho ADMIN thao tác và quản trị cơ sở dữ liệu F-School qua Web API (Bao gồm Bulk Import Excel/CSV, CRUD Users, Academic, News, Lịch học, Duyệt đơn từ).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Admin Authentication",
+      "item": [
+        {
+          "name": "Admin Login (Tự động lưu Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.environment.set(\"admin_token\", json.accessToken);",
+                  "    pm.test(\"Login successful and admin_token saved\", function () {",
+                  "        pm.expect(json.accessToken).to.be.a('string');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Đăng nhập với tài khoản ADMIN. Test script tự động trích xuất `accessToken` và lưu vào biến `{{admin_token}}` trong Environment."
+          }
+        },
+        {
+          "name": "Get Current Admin Profile (/auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Tra cứu hồ sơ cá nhân và quyền hạn của Admin hiện tại."
+          }
+        },
+        {
+          "name": "Admin Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "description": "Thu hồi token JWT của Admin và đưa vào Redis Blacklist."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Admin - Bulk Import (Excel & CSV Nạp Dữ Liệu Lớn)",
+      "item": [
+        {
+          "name": "Import Users (Tân sinh viên, Giảng viên, Phụ huynh)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "postman/sample_templates/users_sample.csv",
+                  "description": "Chọn file .csv hoặc .xlsx chứa danh sách người dùng"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/import/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "import", "users"]
+            },
+            "description": "Nạp hàng loạt người dùng vào Database. Mật khẩu mặc định là `123456` tự động được mã hóa BCrypt. Cột yêu cầu: rollNumber, email, fullName, phoneNumber, role, status."
+          }
+        },
+        {
+          "name": "Import Grades (Bảng điểm học kỳ)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "postman/sample_templates/grades_sample.csv",
+                  "description": "Chọn file .csv hoặc .xlsx chứa bảng điểm sinh viên"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/import/grades",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "import", "grades"]
+            },
+            "description": "Nạp bảng điểm hàng loạt cho sinh viên theo lớp. Cột yêu cầu: rollNumber, classCode, assessmentName, weight, score, feedback, status."
+          }
+        },
+        {
+          "name": "Import Schedules (Thời khóa biểu cả kỳ)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "postman/sample_templates/schedules_sample.csv",
+                  "description": "Chọn file .csv hoặc .xlsx chứa lịch học"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/import/schedules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "import", "schedules"]
+            },
+            "description": "Nạp lịch học hàng loạt cho các lớp học. Cột yêu cầu: classCode, courseCode, date (YYYY-MM-DD), slotNumber (1-6), room, sessionNo, note, status."
+          }
+        },
+        {
+          "name": "Import Enrollments (Ghi danh Sinh viên vào Lớp học phần)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "postman/sample_templates/enrollments_sample.csv",
+                  "description": "Chọn file .csv hoặc .xlsx chứa danh sách ghi danh"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/import/enrollments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "import", "enrollments"]
+            },
+            "description": "Nạp danh sách ghi danh học sinh vào các lớp học phần. Cột yêu cầu: rollNumber, classCode, courseCode, status."
+          }
+        },
+        {
+          "name": "Download Template (Users Template)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/import/templates/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "import", "templates", "users"]
+            },
+            "description": "Tải file CSV mẫu cho việc nhập danh sách người dùng."
+          }
+        },
+        {
+          "name": "Download Template (Grades Template)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/import/templates/grades",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "import", "templates", "grades"]
+            },
+            "description": "Tải file CSV mẫu cho việc nạp điểm."
+          }
+        },
+        {
+          "name": "Download Template (Schedules Template)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/import/templates/schedules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "import", "templates", "schedules"]
+            },
+            "description": "Tải file CSV mẫu cho việc xếp lịch học."
+          }
+        },
+        {
+          "name": "Download Template (Enrollments Template)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/import/templates/enrollments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "import", "templates", "enrollments"]
+            },
+            "description": "Tải file CSV mẫu cho việc ghi danh sinh viên vào lớp học phần."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Admin - User Management (Quản lý Người dùng)",
+      "item": [
+        {
+          "name": "Get All Users (Phân trang)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users?page=0&size=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Xem danh sách người dùng trong cơ sở dữ liệu."
+          }
+        },
+        {
+          "name": "Create Single User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rollNumber\": \"SE194520\",\n  \"email\": \"sv20@fpt.edu.vn\",\n  \"password\": \"123456\",\n  \"fullName\": \"Trần Quốc Anh\",\n  \"phoneNumber\": \"0912999888\",\n  \"role\": \"STUDENT\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "users"]
+            },
+            "description": "Tạo 1 tài khoản mới trực tiếp vào database."
+          }
+        },
+        {
+          "name": "Update User Status (Khóa / Mở khóa)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"LOCKED\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users/{{userId}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "users", "{{userId}}", "status"]
+            },
+            "description": "Cập nhật trạng thái người dùng (ACTIVE, LOCKED, INACTIVE)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Admin - Academic Management (Môn học & Lớp học)",
+      "item": [
+        {
+          "name": "Get All Courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/academic/courses",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "academic", "courses"]
+            },
+            "description": "Xem danh sách toàn bộ các môn học."
+          }
+        },
+        {
+          "name": "Create Course (Thêm Môn học)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseCode\": \"ITE302c\",\n  \"courseName\": \"Ethics in Information Technology\",\n  \"credits\": 3,\n  \"description\": \"Đạo đức nghề nghiệp trong ngành Công nghệ thông tin\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/academic/courses",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "academic", "courses"]
+            },
+            "description": "Thêm một môn học mới vào cơ sở dữ liệu."
+          }
+        },
+        {
+          "name": "Get All Classes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/academic/classes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "academic", "classes"]
+            },
+            "description": "Xem danh sách các lớp học hiện có."
+          }
+        },
+        {
+          "name": "Get Student Classes in Semester (Danh sách Lớp học phần của Sinh viên)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/academic/students/{{userId}}/classes?semester=Fall2026",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "academic", "students", "{{userId}}", "classes"],
+              "query": [
+                {
+                  "key": "semester",
+                  "value": "Fall2026",
+                  "description": "Học kỳ muốn lọc"
+                }
+              ]
+            },
+            "description": "Tra cứu tất cả các lớp học phần sinh viên đang theo học trong học kỳ."
+          }
+        },
+        {
+          "name": "Create Class (Mở Lớp học)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"classCode\": \"SE1945_ITE\",\n  \"courseId\": {{courseId}},\n  \"lecturerId\": 2,\n  \"semester\": \"Fall2026\",\n  \"academicYear\": 2026,\n  \"roomDefault\": \"BE-405\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/academic/classes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "academic", "classes"]
+            },
+            "description": "Mở một lớp học mới và phân bổ giảng viên."
+          }
+        },
+        {
+          "name": "Create Schedule (Xếp Lịch học)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"classId\": {{classId}},\n  \"slotNumber\": 1,\n  \"date\": \"2026-10-25\",\n  \"startTime\": \"07:30:00\",\n  \"endTime\": \"09:50:00\",\n  \"room\": \"BE-301\",\n  \"lecturerId\": 2,\n  \"note\": \"Session 1: Introduction to Mobile Architecture\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/academic/schedules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "academic", "schedules"]
+            },
+            "description": "Tạo buổi học mới cho lớp học."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Admin - Student Requests Review (Duyệt Đơn từ)",
+      "item": [
+        {
+          "name": "Process Student Request (Phê duyệt / Từ chối)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"responseNote\": \"Đã duyệt đơn xin phép. Chúc em sớm bình phục.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/academic/requests/{{requestId}}/process",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "academic", "requests", "{{requestId}}", "process"]
+            },
+            "description": "Duyệt hoặc từ chối đơn từ học vụ của sinh viên/phụ huynh."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Admin - News & Broadcasts (Đăng Tin tức)",
+      "item": [
+        {
+          "name": "Create News Article (Đăng tin & Gửi thông báo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lịch nghỉ lễ kỷ niệm thành lập trường 2026\",\n  \"summary\": \"Thông báo lịch nghỉ và hoạt động chào mừng ngày thành lập FPT.\",\n  \"content\": \"Nhà trường trân trọng thông báo toàn thể sinh viên và cán bộ giảng viên được nghỉ ngày 20/11.\",\n  \"thumbnailUrl\": \"https://picsum.photos/seed/anniversary/800/400\",\n  \"category\": \"EVENT\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/news",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "news"]
+            },
+            "description": "Admin đăng bài viết tin tức mới (tự động phát thông báo tới sinh viên)."
+          }
+        },
+        {
+          "name": "Get All News (Bảng tin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/news?limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "news"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Xem danh sách các tin tức đã xuất bản."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Database Verification Queries (Tra cứu đối chiếu)",
+      "item": [
+        {
+          "name": "Verify Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications?page=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Kiểm tra danh sách thông báo sau khi phát tin mới."
+          }
+        },
+        {
+          "name": "Verify Clubs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clubs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clubs"]
+            },
+            "description": "Tra cứu danh sách câu lạc bộ."
+          }
+        }
+      ]
+    }
+  ]
+}

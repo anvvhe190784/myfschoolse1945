@@ -2,9 +2,14 @@ package vn.edu.fpt.fschool.model;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "courses")
+@Getter
+@Setter
 public class Course {
 
   @Id
@@ -29,55 +34,7 @@ public class Course {
 
   @PrePersist
   protected void onCreate() {
-    if (createdAt == null) createdAt = OffsetDateTime.now();
+    if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
     if (credits == null) credits = 3;
-  }
-
-  public Long getCourseId() {
-    return courseId;
-  }
-
-  public void setCourseId(Long courseId) {
-    this.courseId = courseId;
-  }
-
-  public String getCourseCode() {
-    return courseCode;
-  }
-
-  public void setCourseCode(String courseCode) {
-    this.courseCode = courseCode;
-  }
-
-  public String getCourseName() {
-    return courseName;
-  }
-
-  public void setCourseName(String courseName) {
-    this.courseName = courseName;
-  }
-
-  public Integer getCredits() {
-    return credits;
-  }
-
-  public void setCredits(Integer credits) {
-    this.credits = credits;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public OffsetDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(OffsetDateTime createdAt) {
-    this.createdAt = createdAt;
   }
 }

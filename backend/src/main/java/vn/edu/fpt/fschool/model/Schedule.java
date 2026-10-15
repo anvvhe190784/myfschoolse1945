@@ -4,9 +4,14 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "schedules")
+@Getter
+@Setter
 public class Schedule {
 
   @Id
@@ -51,104 +56,8 @@ public class Schedule {
 
   @PrePersist
   protected void onCreate() {
-    if (createdAt == null) createdAt = OffsetDateTime.now();
+    if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
     if (status == null) status = "UPCOMING";
     if (sessionNo == null) sessionNo = 1;
-  }
-
-  public Long getScheduleId() {
-    return scheduleId;
-  }
-
-  public void setScheduleId(Long scheduleId) {
-    this.scheduleId = scheduleId;
-  }
-
-  public ClassEntity getClassEntity() {
-    return classEntity;
-  }
-
-  public void setClassEntity(ClassEntity classEntity) {
-    this.classEntity = classEntity;
-  }
-
-  public Integer getSlotNumber() {
-    return slotNumber;
-  }
-
-  public void setSlotNumber(Integer slotNumber) {
-    this.slotNumber = slotNumber;
-  }
-
-  public LocalDate getDate() {
-    return date;
-  }
-
-  public void setDate(LocalDate date) {
-    this.date = date;
-  }
-
-  public LocalTime getStartTime() {
-    return startTime;
-  }
-
-  public void setStartTime(LocalTime startTime) {
-    this.startTime = startTime;
-  }
-
-  public LocalTime getEndTime() {
-    return endTime;
-  }
-
-  public void setEndTime(LocalTime endTime) {
-    this.endTime = endTime;
-  }
-
-  public String getRoom() {
-    return room;
-  }
-
-  public void setRoom(String room) {
-    this.room = room;
-  }
-
-  public Integer getSessionNo() {
-    return sessionNo;
-  }
-
-  public void setSessionNo(Integer sessionNo) {
-    this.sessionNo = sessionNo;
-  }
-
-  public User getLecturer() {
-    return lecturer;
-  }
-
-  public void setLecturer(User lecturer) {
-    this.lecturer = lecturer;
-  }
-
-  public String getNote() {
-    return note;
-  }
-
-  public void setNote(String note) {
-    this.note = note;
-  }
-
-  public String getStatus() {
-    return status;
-  }
-
-  public void setStatus(String status) {
-    this.status = status;
-  }
-
-  public OffsetDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(OffsetDateTime createdAt) {
-    this.createdAt = createdAt;
   }
 }

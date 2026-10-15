@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/service/api_client.dart';
@@ -61,6 +62,27 @@ void main() {
       await newClient.clearAuthToken();
       expect(newClient.authToken, isNull);
       expect(await newClient.restoreSession(), isNull);
+    });
+
+    test('isTokenExpired correctly detects expired and valid JWT tokens', () {
+      expect(ApiClient.isTokenExpired('simple-token'), isFalse);
+
+      final futureExp =
+          (DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+              1000);
+      final futurePayload = base64Url.encode(
+          utf8.encode(jsonEncode({'sub': 'test', 'exp': futureExp})));
+      final validJwt = 'header.$futurePayload.signature';
+      expect(ApiClient.isTokenExpired(validJwt), isFalse);
+
+      final pastExp = (DateTime.now()
+                  .subtract(const Duration(hours: 1))
+                  .millisecondsSinceEpoch ~/
+              1000);
+      final pastPayload = base64Url.encode(
+          utf8.encode(jsonEncode({'sub': 'test', 'exp': pastExp})));
+      final expiredJwt = 'header.$pastPayload.signature';
+      expect(ApiClient.isTokenExpired(expiredJwt), isTrue);
     });
   });
 }

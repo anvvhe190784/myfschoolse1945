@@ -29,6 +29,8 @@ class NewsModel {
   });
 
   factory NewsModel.fromJson(Map<String, dynamic> json) {
+    final rawPublishedAt = json['publishedAt'] ?? json['published_at'];
+    final rawCreatedAt = json['createdAt'] ?? json['created_at'];
     return NewsModel(
       newsId: json['newsId'] ?? json['news_id'],
       title: json['title'] ?? '',
@@ -40,16 +42,8 @@ class NewsModel {
       category: json['category'] ?? 'GENERAL',
       viewsCount: json['viewsCount'] ?? json['views_count'] ?? 0,
       isPublished: json['isPublished'] ?? json['is_published'] ?? true,
-      publishedAt: json['publishedAt'] != null
-          ? DateTime.tryParse(json['publishedAt'].toString())
-          : (json['published_at'] != null
-              ? DateTime.tryParse(json['published_at'].toString())
-              : null),
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString())
-              : null),
+      publishedAt: rawPublishedAt != null ? DateTime.tryParse(rawPublishedAt.toString()) : null,
+      createdAt: rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null,
     );
   }
 

@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import vn.edu.fpt.fschool.dto.GradeDtos.GradeResponse;
+import vn.edu.fpt.fschool.mapper.AcademicMapper;
 import vn.edu.fpt.fschool.model.ClassEntity;
 import vn.edu.fpt.fschool.model.Grade;
 import vn.edu.fpt.fschool.model.User;
@@ -27,12 +28,17 @@ class GradeSecurityTest {
 
   @Mock private UserRepository userRepository;
 
+  @Mock private StudentAccessResolver studentAccessResolver;
+
+  @Mock private AcademicMapper academicMapper;
+
   @InjectMocks private GradeService gradeService;
 
   private User studentA;
   private User studentB;
   private User lecturer;
   private Grade gradeStudentA;
+  private GradeResponse gradeResponse;
 
   @BeforeEach
   void setUp() {
@@ -52,6 +58,18 @@ class GradeSecurityTest {
     gradeStudentA.setAssessmentName("Progress Test 1");
     gradeStudentA.setWeight(new BigDecimal("10.00"));
     gradeStudentA.setScore(new BigDecimal("8.50"));
+
+    gradeResponse =
+        new GradeResponse(
+            500L,
+            1L,
+            "SE1945",
+            "PRJ301",
+            "Progress Test 1",
+            new BigDecimal("10.00"),
+            new BigDecimal("8.50"),
+            "Good",
+            "PASSED");
   }
 
   @Test
@@ -72,6 +90,7 @@ class GradeSecurityTest {
     when(gradeRepository.findById(500L)).thenReturn(Optional.of(gradeStudentA));
     when(userRepository.findByEmailIgnoreCase("studentA@fpt.edu.vn"))
         .thenReturn(Optional.of(studentA));
+    when(academicMapper.toGradeResponse(gradeStudentA)).thenReturn(gradeResponse);
 
     GradeResponse response = gradeService.getGradeDetail(500L, "studentA@fpt.edu.vn");
     assertNotNull(response);
@@ -85,9 +104,36 @@ class GradeSecurityTest {
     when(gradeRepository.findById(500L)).thenReturn(Optional.of(gradeStudentA));
     when(userRepository.findByEmailIgnoreCase("teacher@fe.edu.vn"))
         .thenReturn(Optional.of(lecturer));
+    when(academicMapper.toGradeResponse(gradeStudentA)).thenReturn(gradeResponse);
 
     GradeResponse response = gradeService.getGradeDetail(500L, "teacher@fe.edu.vn");
     assertNotNull(response);
     assertEquals(500L, response.gradeId());
+  }
+
+  @Test
+  @DisplayName("Thành công: Phụ huynh được phép xem chi tiết điểm của con mình")
+  void getGradeDetail_shouldSucceed_whenAccessedByParentOfStudent() {
+    User parent = User.builder().userId(301L).email("parent@gmail.com").role("PARENT").build();
+    when(gradeRepository.findById(500L)).thenReturn(Optional.of(gradeStudentA));
+    when(userRepository.findByEmailIgnoreCase("parent@gmail.com")).thenReturn(Optional.of(parent));
+    when(studentAccessResolver.isParentOf(301L, 101L)).thenReturn(true);
+    when(academicMapper.toGradeResponse(gradeStudentA)).thenReturn(gradeResponse);
+
+    GradeResponse response = gradeService.getGradeDetail(500L, "parent@gmail.com");
+    assertNotNull(response);
+    assertEquals(500L, response.gradeId());
+  }
+
+  @Test
+  @DisplayName("Bảo mật: Phụ huynh KHÔNG ĐƯỢC PHÉP xem điểm của học sinh khác")
+  void getGradeDetail_shouldReject_whenNotParentOfStudent() {
+    User parent = User.builder().userId(301L).email("parent@gmail.com").role("PARENT").build();
+    when(gradeRepository.findById(500L)).thenReturn(Optional.of(gradeStudentA));
+    when(userRepository.findByEmailIgnoreCase("parent@gmail.com")).thenReturn(Optional.of(parent));
+    when(studentAccessResolver.isParentOf(301L, 101L)).thenReturn(false);
+
+    assertThrows(
+        AccessDeniedException.class, () -> gradeService.getGradeDetail(500L, "parent@gmail.com"));
   }
 }

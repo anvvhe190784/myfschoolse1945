@@ -1,0 +1,55 @@
+{
+  "id": "e969d273-5dc2-48df-b59a-32c3f8e56230",
+  "name": "F-School Local Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "admin_email",
+      "value": "admin@fpt.edu.vn",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "admin_password",
+      "value": "123456",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "3",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "requestId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "classId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "courseId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

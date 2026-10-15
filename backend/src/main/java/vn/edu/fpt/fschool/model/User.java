@@ -2,6 +2,7 @@ package vn.edu.fpt.fschool.model;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import lombok.*;
 
 @Entity
@@ -54,8 +55,8 @@ public class User {
 
   @PrePersist
   protected void onCreate() {
-    if (createdAt == null) createdAt = OffsetDateTime.now();
-    if (updatedAt == null) updatedAt = OffsetDateTime.now();
+    if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+    if (updatedAt == null) updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     if (status == null) status = "ACTIVE";
     if (role == null) role = "STUDENT";
     if (tokenVersion == null) tokenVersion = 1;
@@ -63,7 +64,7 @@ public class User {
 
   @PreUpdate
   protected void onUpdate() {
-    updatedAt = OffsetDateTime.now();
+    updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
   }
 
   @Override

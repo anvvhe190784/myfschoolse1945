@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/forgot_password_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/verify_email_screen.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/widget/bounce_tap.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   final ForgotPasswordController? controller;
@@ -118,11 +119,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 const SizedBox(height: 36),
 
                 // Email Field
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Email',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: labelYellow,
@@ -154,63 +155,67 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 const SizedBox(height: 36),
 
                 // Send Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _handleSendVerificationEmail,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryYellow,
-                      foregroundColor: textDark,
-                      elevation: 2,
-                      shadowColor: primaryYellow.withValues(alpha: 0.4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                BounceTap(
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _handleSendVerificationEmail,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryYellow,
+                        foregroundColor: textDark,
+                        elevation: 2,
+                        shadowColor: primaryYellow.withValues(alpha: 0.4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
+                      child: _controller.isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: textDark,
+                              ),
+                            )
+                          : const Text(
+                              'Gửi mã xác nhận',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
-                    child: _controller.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: textDark,
-                            ),
-                          )
-                        : const Text(
-                            'Gửi mã xác nhận',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
                 // Back to Sign In
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.arrow_back_rounded,
-                        size: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Quay lại đăng nhập',
-                        style: TextStyle(
+                BounceTap(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.arrow_back_rounded,
+                          size: 16,
                           color: Colors.grey.shade600,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          'Quay lại đăng nhập',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

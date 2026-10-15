@@ -87,15 +87,7 @@ class LoginController extends ChangeNotifier {
       _isLoading = false;
       if (allowOfflineFallback) {
         // Fallback for tests or offline preview when backend is not actively running
-        _loginResponse = LoginResponse(
-          accessToken: 'offline-jwt-token',
-          refreshToken: 'offline-refresh-token',
-          userId: 1,
-          rollNumber: identifier.contains('@') ? null : (identifier.isEmpty ? 'HE194500' : identifier),
-          email: identifier.contains('@') ? identifier : (identifier.isEmpty ? 'anvvhe194500@fpt.edu.vn' : '$identifier@fpt.edu.vn'),
-          fullName: 'Vũ Văn An',
-          role: 'STUDENT',
-        );
+        _loginResponse = _createOfflineFallbackResponse(identifier);
         apiClient.setAuthToken('offline-jwt-token', 'offline-refresh-token');
         notifyListeners();
         return true;
@@ -104,6 +96,32 @@ class LoginController extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  LoginResponse _createOfflineFallbackResponse(String identifier) {
+    String? rollNumber;
+    String email;
+
+    if (identifier.contains('@')) {
+      rollNumber = null;
+      email = identifier;
+    } else if (identifier.isEmpty) {
+      rollNumber = 'HE194500';
+      email = 'anvvhe194500@fpt.edu.vn';
+    } else {
+      rollNumber = identifier;
+      email = '$identifier@fpt.edu.vn';
+    }
+
+    return LoginResponse(
+      accessToken: 'offline-jwt-token',
+      refreshToken: 'offline-refresh-token',
+      userId: 1,
+      rollNumber: rollNumber,
+      email: email,
+      fullName: 'Vũ Văn An',
+      role: 'STUDENT',
+    );
   }
 
   @override

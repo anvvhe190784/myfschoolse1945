@@ -102,6 +102,7 @@ public class TokenVersionService {
       try {
         stringRedisTemplate.delete(TOKEN_VERSION_PREFIX + normalizedEmail);
       } catch (Exception ignored) {
+        // Fallback silently if Redis is unreachable; in-memory store eviction follows
       }
     }
     inMemoryTokenVersionStore.remove(normalizedEmail);

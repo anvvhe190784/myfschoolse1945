@@ -30,6 +30,8 @@ class ApiClient {
   static const String tokenKey = 'jwt_access_token';
   static const String legacyTokenKey = 'jwt_token';
   static const String refreshTokenKey = 'jwt_refresh_token';
+  static const String _applicationJson = 'application/json';
+  static const String _authPathSegment = '/auth/';
 
   final String baseUrl;
   final HttpClient _httpClient;
@@ -47,7 +49,10 @@ class ApiClient {
           ..connectionTimeout = const Duration(seconds: 5),
         _secureStorage = secureStorage ??
             const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
+              aOptions: AndroidOptions(
+                encryptedSharedPreferences: false,
+                resetOnError: true,
+              ),
             );
 
   static String _resolveDefaultBaseUrl() {
@@ -62,6 +67,26 @@ class ApiClient {
       // Fallback for non-platform environments
     }
     return 'http://localhost:8080/api/v1';
+  }
+
+  /// Checks if a JWT token has expired or is nearing expiration.
+  static bool isTokenExpired(String token, {Duration threshold = const Duration(seconds: 30)}) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      final normalized = base64Url.normalize(parts[1]);
+      final payloadStr = utf8.decode(base64Url.decode(normalized));
+      final decoded = jsonDecode(payloadStr);
+      if (decoded is Map<String, dynamic> && decoded.containsKey('exp')) {
+        final exp = decoded['exp'];
+        final expSeconds = exp is num ? exp.toInt() : int.tryParse(exp.toString());
+        if (expSeconds != null) {
+          final expiryDate = DateTime.fromMillisecondsSinceEpoch(expSeconds * 1000);
+          return DateTime.now().isAfter(expiryDate.subtract(threshold));
+        }
+      }
+    } catch (_) {}
+    return false;
   }
 
   void setAuthToken(String token, [String? refreshToken]) {
@@ -80,11 +105,11 @@ class ApiClient {
     try {
       await _secureStorage
           .write(key: tokenKey, value: accessToken)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 3));
       if (refreshToken.isNotEmpty) {
         await _secureStorage
             .write(key: refreshTokenKey, value: refreshToken)
-            .timeout(const Duration(seconds: 5));
+            .timeout(const Duration(seconds: 3));
       }
     } catch (_) {}
   }
@@ -93,31 +118,63 @@ class ApiClient {
     await saveTokens(accessToken: token, refreshToken: _refreshToken ?? '');
   }
 
+  Future<String?> _readStorageWithFallback(String key) async {
+    try {
+      final val = await _secureStorage
+          .read(key: key)
+          .timeout(const Duration(seconds: 2));
+      if (val != null && val.isNotEmpty) return val;
+    } catch (_) {}
+
+    // Fallback: try reading legacy EncryptedSharedPreferences if migration needed on Android
+    try {
+      if (!kIsWeb && Platform.isAndroid) {
+        const legacyStorage = FlutterSecureStorage(
+          aOptions: AndroidOptions(
+            encryptedSharedPreferences: true,
+            resetOnError: true,
+          ),
+        );
+        final legacyVal = await legacyStorage
+            .read(key: key)
+            .timeout(const Duration(seconds: 1));
+        if (legacyVal != null && legacyVal.isNotEmpty) {
+          await _secureStorage
+              .write(key: key, value: legacyVal)
+              .timeout(const Duration(seconds: 2));
+          return legacyVal;
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  Future<String?> _tryRefresh() async {
+    if (_refreshToken != null && _refreshToken!.isNotEmpty) {
+      final success = await refreshAccessToken();
+      if (success) return _authToken;
+    }
+    return null;
+  }
+
   Future<String?> restoreSession() async {
     try {
-      final savedToken = await _secureStorage
-          .read(key: tokenKey)
-          .timeout(const Duration(seconds: 5));
-      final legacyToken = savedToken ??
-          await _secureStorage
-              .read(key: legacyTokenKey)
-              .timeout(const Duration(seconds: 5));
-      final savedRefreshToken = await _secureStorage
-          .read(key: refreshTokenKey)
-          .timeout(const Duration(seconds: 5));
+      final savedToken = await _readStorageWithFallback(tokenKey);
+      final legacyToken =
+          savedToken ?? await _readStorageWithFallback(legacyTokenKey);
+      final savedRefreshToken = await _readStorageWithFallback(refreshTokenKey);
 
       if (savedRefreshToken != null && savedRefreshToken.isNotEmpty) {
         _refreshToken = savedRefreshToken;
       }
 
-      if (legacyToken != null && legacyToken.isNotEmpty) {
+      if (legacyToken != null && legacyToken.isNotEmpty && !isTokenExpired(legacyToken)) {
         _authToken = legacyToken;
         return legacyToken;
-      } else if (_refreshToken != null && _refreshToken!.isNotEmpty) {
-        // Access token missing/expired, attempt transparent refresh
-        final success = await refreshAccessToken();
-        if (success) return _authToken;
       }
+
+      return await _tryRefresh();
     } catch (_) {}
     return null;
   }
@@ -128,13 +185,13 @@ class ApiClient {
     try {
       await _secureStorage
           .delete(key: tokenKey)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 2));
       await _secureStorage
           .delete(key: legacyTokenKey)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 2));
       await _secureStorage
           .delete(key: refreshTokenKey)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 2));
     } catch (_) {}
   }
 
@@ -144,8 +201,8 @@ class ApiClient {
 
   Map<String, String> _buildHeaders() {
     final headers = <String, String>{
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      'Content-Type': _applicationJson,
+      'Accept': _applicationJson,
     };
     if (_authToken != null && _authToken!.isNotEmpty) {
       headers['Authorization'] = 'Bearer $_authToken';
@@ -183,8 +240,8 @@ class ApiClient {
     try {
       final uri = _buildUri('/auth/refresh-token');
       final request = await _httpClient.postUrl(uri);
-      request.headers.set('Content-Type', 'application/json');
-      request.headers.set('Accept', 'application/json');
+      request.headers.set('Content-Type', _applicationJson);
+      request.headers.set('Accept', _applicationJson);
       request.write(jsonEncode({'refreshToken': _refreshToken}));
 
       final response = await request.close();
@@ -227,7 +284,7 @@ class ApiClient {
     final response = await request.close();
     final body = await response.transform(utf8.decoder).join();
 
-    if (response.statusCode == 401 && !isRetry && !path.contains('/auth/')) {
+    if (response.statusCode == 401 && !isRetry && !path.contains(_authPathSegment)) {
       final refreshed = await refreshAccessToken();
       if (refreshed) {
         return get(path, queryParams: queryParams, isRetry: true);
@@ -253,7 +310,7 @@ class ApiClient {
     final response = await request.close();
     final bodyStr = await response.transform(utf8.decoder).join();
 
-    if (response.statusCode == 401 && !isRetry && !path.contains('/auth/')) {
+    if (response.statusCode == 401 && !isRetry && !path.contains(_authPathSegment)) {
       final refreshed = await refreshAccessToken();
       if (refreshed) {
         return post(path, body: body, isRetry: true);
@@ -279,7 +336,7 @@ class ApiClient {
     final response = await request.close();
     final bodyStr = await response.transform(utf8.decoder).join();
 
-    if (response.statusCode == 401 && !isRetry && !path.contains('/auth/')) {
+    if (response.statusCode == 401 && !isRetry && !path.contains(_authPathSegment)) {
       final refreshed = await refreshAccessToken();
       if (refreshed) {
         return patch(path, body: body, isRetry: true);
@@ -401,15 +458,18 @@ class ApiClient {
 
   /// POST /api/v1/auth/reset-password
   Future<Map<String, dynamic>> resetPassword({
-    required String email,
-    required String otp,
     required String newPassword,
+    String? email,
+    String? otp,
+    String? resetToken,
   }) async {
-    final result = await post('/auth/reset-password', body: {
-      'email': email,
-      'otp': otp,
+    final body = <String, dynamic>{
       'newPassword': newPassword,
-    });
+      if (resetToken != null && resetToken.isNotEmpty) 'resetToken': resetToken,
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (otp != null && otp.isNotEmpty) 'otp': otp,
+    };
+    final result = await post('/auth/reset-password', body: body);
     if (result is Map<String, dynamic>) {
       return result;
     }

@@ -29,6 +29,7 @@ class ClubModel {
   });
 
   factory ClubModel.fromJson(Map<String, dynamic> json) {
+    final rawCreatedAt = json['createdAt'] ?? json['created_at'];
     return ClubModel(
       clubId: json['clubId'] ?? json['club_id'],
       clubName: json['clubName'] ?? json['club_name'] ?? '',
@@ -41,11 +42,7 @@ class ClubModel {
       contactEmail: json['contactEmail'] ?? json['contact_email'],
       memberCount: json['memberCount'] ?? json['member_count'] ?? 1,
       isActive: json['isActive'] ?? json['is_active'] ?? true,
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString())
-              : null),
+      createdAt: rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null,
     );
   }
 
@@ -117,16 +114,13 @@ class ClubMembershipModel {
   });
 
   factory ClubMembershipModel.fromJson(Map<String, dynamic> json) {
+    final rawJoinedAt = json['joinedAt'] ?? json['joined_at'];
     return ClubMembershipModel(
       membershipId: json['membershipId'] ?? json['membership_id'],
       clubId: json['clubId'] ?? json['club_id'] ?? 0,
       userId: json['userId'] ?? json['user_id'] ?? 0,
       role: json['role'] ?? 'MEMBER',
-      joinedAt: json['joinedAt'] != null
-          ? DateTime.tryParse(json['joinedAt'].toString())
-          : (json['joined_at'] != null
-              ? DateTime.tryParse(json['joined_at'].toString())
-              : null),
+      joinedAt: rawJoinedAt != null ? DateTime.tryParse(rawJoinedAt.toString()) : null,
     );
   }
 

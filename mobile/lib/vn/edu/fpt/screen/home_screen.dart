@@ -3,16 +3,21 @@ import 'package:myfschoolse1945/vn/edu/fpt/controller/account_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/home_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/account_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/notification_screen.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/widget/bounce_tap.dart';
 
 
 class HomeScreen extends StatefulWidget {
   final String studentName;
+  final String? email;
+  final String? rollNumber;
   final HomeController? controller;
   final AccountController? accountController;
 
   const HomeScreen({
     super.key,
     this.studentName = 'Học sinh',
+    this.email,
+    this.rollNumber,
     this.controller,
     this.accountController,
   });
@@ -39,7 +44,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     _ownsAccountController = widget.accountController == null;
     _accountController = widget.accountController ??
-        AccountController(studentName: widget.studentName);
+        AccountController(
+          studentName: widget.studentName,
+          email: widget.email ?? 'anvvhe194500@fpt.edu.vn',
+          rollNumber: widget.rollNumber ?? 'HE194500',
+          studentId: widget.rollNumber ?? 'HS194500',
+        );
+    _accountController.loadProfile();
   }
 
   @override
@@ -362,8 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMenuItem(FeatureMenuItem item) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
+    return BounceTap(
       onTap: () {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -470,84 +480,96 @@ class _HomeScreenState extends State<HomeScreen> {
           separatorBuilder: (context, _) => const SizedBox(width: 14),
           itemBuilder: (context, index) {
             final news = newsList[index];
-            return Container(
-              width: 230,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200, width: 1.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+            return BounceTap(
+              onTap: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Xem chi tiết: ${news.title}'),
+                    duration: const Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 85,
-                    decoration: BoxDecoration(
-                      color: news.headerColor.withValues(alpha: 0.12),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
+                );
+              },
+              child: Container(
+                width: 230,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200, width: 1.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 85,
+                      decoration: BoxDecoration(
+                        color: news.headerColor.withValues(alpha: 0.12),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              news.icon,
+                              size: 32,
+                              color: news.headerColor,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              news.badgeText,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: news.headerColor,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    child: Center(
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            news.icon,
-                            size: 32,
-                            color: news.headerColor,
-                          ),
-                          const SizedBox(height: 4),
                           Text(
-                            news.badgeText,
-                            style: TextStyle(
-                              fontSize: 11,
+                            news.title,
+                            style: const TextStyle(
+                              fontSize: 13.5,
                               fontWeight: FontWeight.bold,
-                              color: news.headerColor,
-                              letterSpacing: 0.5,
+                              color: textDark,
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            news.date,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          news.title,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.bold,
-                            color: textDark,
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          news.date,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -604,9 +626,9 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Container(
             height: 85,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: const BorderRadius.only(
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),

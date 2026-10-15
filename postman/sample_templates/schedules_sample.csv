@@ -1,0 +1,4 @@
+classCode,courseCode,date,slotNumber,room,sessionNo,note,status
+SE1945,PRM393,2026-10-21,1,BE-301,13,Session 13: Flutter State Management,UPCOMING
+SE1945,PRM393,2026-10-23,2,BE-301,14,Session 14: Clean Architecture in Flutter,UPCOMING
+SE1945,SWR302,2026-10-24,3,BE-305,11,Session 11: SRS Document Review,UPCOMING

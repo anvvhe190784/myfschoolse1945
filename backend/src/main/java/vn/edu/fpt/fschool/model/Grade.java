@@ -3,9 +3,14 @@ package vn.edu.fpt.fschool.model;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "grades")
+@Getter
+@Setter
 public class Grade {
 
   @Id
@@ -42,79 +47,7 @@ public class Grade {
   @PrePersist
   @PreUpdate
   protected void onUpdate() {
-    updatedAt = OffsetDateTime.now();
+    updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     if (status == null) status = "PUBLISHED";
-  }
-
-  public Long getGradeId() {
-    return gradeId;
-  }
-
-  public void setGradeId(Long gradeId) {
-    this.gradeId = gradeId;
-  }
-
-  public ClassEntity getClassEntity() {
-    return classEntity;
-  }
-
-  public void setClassEntity(ClassEntity classEntity) {
-    this.classEntity = classEntity;
-  }
-
-  public User getStudent() {
-    return student;
-  }
-
-  public void setStudent(User student) {
-    this.student = student;
-  }
-
-  public String getAssessmentName() {
-    return assessmentName;
-  }
-
-  public void setAssessmentName(String assessmentName) {
-    this.assessmentName = assessmentName;
-  }
-
-  public BigDecimal getWeight() {
-    return weight;
-  }
-
-  public void setWeight(BigDecimal weight) {
-    this.weight = weight;
-  }
-
-  public BigDecimal getScore() {
-    return score;
-  }
-
-  public void setScore(BigDecimal score) {
-    this.score = score;
-  }
-
-  public String getFeedback() {
-    return feedback;
-  }
-
-  public void setFeedback(String feedback) {
-    this.feedback = feedback;
-  }
-
-  public String getStatus() {
-    return status;
-  }
-
-  public void setStatus(String status) {
-    this.status = status;
-  }
-
-  public OffsetDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(OffsetDateTime updatedAt) {
-    this.updatedAt = updatedAt;
   }
 }

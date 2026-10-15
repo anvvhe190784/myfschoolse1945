@@ -1,7 +1,9 @@
 package vn.edu.fpt.fschool.service;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.edu.fpt.fschool.dto.NotificationDtos.NotificationResponse;
 import vn.edu.fpt.fschool.dto.NotificationDtos.UnreadCountResponse;
 import vn.edu.fpt.fschool.model.Notification;
+import vn.edu.fpt.fschool.model.NotificationRead;
 import vn.edu.fpt.fschool.model.User;
+import vn.edu.fpt.fschool.repository.NotificationReadRepository;
 import vn.edu.fpt.fschool.repository.NotificationRepository;
 import vn.edu.fpt.fschool.repository.UserRepository;
 
@@ -19,33 +23,60 @@ import vn.edu.fpt.fschool.repository.UserRepository;
 public class NotificationService {
 
   private final NotificationRepository notificationRepository;
+  private final NotificationReadRepository notificationReadRepository;
   private final UserRepository userRepository;
 
   @Transactional(readOnly = true)
   public Page<NotificationResponse> getNotifications(
       String email, Pageable pageable, Boolean unreadOnly) {
     User user = getUserByEmail(email);
+    Set<Long> readBroadcastIds =
+        notificationReadRepository.findReadNotificationIdsByUserId(user.getUserId());
+
     Page<Notification> page =
-        (Boolean.TRUE.equals(unreadOnly))
-            ? notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(
-                user.getUserId(), pageable)
-            : notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getUserId(), pageable);
-    return page.map(NotificationResponse::from);
+        notificationRepository.findVisibleNotificationsForUser(user.getUserId(), pageable);
+
+    return page.map(
+        n -> {
+          boolean isRead =
+              (n.getUser() == null)
+                  ? readBroadcastIds.contains(n.getNotificationId())
+                  : Boolean.TRUE.equals(n.getIsRead());
+          return NotificationResponse.from(n, isRead);
+        });
   }
 
   @Transactional(readOnly = true)
   public List<NotificationResponse> getNotifications(String email) {
     User user = getUserByEmail(email);
-    return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getUserId()).stream()
-        .map(NotificationResponse::from)
+    Set<Long> readBroadcastIds =
+        notificationReadRepository.findReadNotificationIdsByUserId(user.getUserId());
+
+    return notificationRepository.findVisibleNotificationsForUser(user.getUserId()).stream()
+        .map(
+            n -> {
+              boolean isRead =
+                  (n.getUser() == null)
+                      ? readBroadcastIds.contains(n.getNotificationId())
+                      : Boolean.TRUE.equals(n.getIsRead());
+              return NotificationResponse.from(n, isRead);
+            })
         .toList();
   }
 
   @Transactional(readOnly = true)
   public UnreadCountResponse getUnreadCount(String email) {
     User user = getUserByEmail(email);
-    long count = notificationRepository.countByUserIdAndIsReadFalse(user.getUserId());
-    return new UnreadCountResponse(count);
+    long personalUnread = notificationRepository.countByUserIdAndIsReadFalse(user.getUserId());
+    Set<Long> readBroadcastIds =
+        notificationReadRepository.findReadNotificationIdsByUserId(user.getUserId());
+
+    long broadcastCount =
+        notificationRepository.findVisibleNotificationsForUser(user.getUserId()).stream()
+            .filter(n -> n.getUser() == null && !readBroadcastIds.contains(n.getNotificationId()))
+            .count();
+
+    return new UnreadCountResponse(personalUnread + broadcastCount);
   }
 
   @Transactional
@@ -53,21 +84,57 @@ public class NotificationService {
     User user = getUserByEmail(email);
     Notification notification =
         notificationRepository
-            .findByNotificationIdAndUser_UserId(notificationId, user.getUserId())
+            .findVisibleByIdAndUserId(notificationId, user.getUserId())
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
                         "Không tìm thấy thông báo với ID: " + notificationId));
 
-    notification.setIsRead(true);
-    Notification saved = notificationRepository.save(notification);
-    return NotificationResponse.from(saved);
+    if (notification.getUser() == null) {
+      // Broadcast notification
+      if (!notificationReadRepository.existsByNotification_NotificationIdAndUser_UserId(
+          notificationId, user.getUserId())) {
+        NotificationRead nr =
+            NotificationRead.builder()
+                .notification(notification)
+                .user(user)
+                .readAt(OffsetDateTime.now(ZoneOffset.UTC))
+                .build();
+        notificationReadRepository.save(nr);
+      }
+      return NotificationResponse.from(notification, true);
+    } else {
+      // Personal notification
+      notification.setIsRead(true);
+      Notification saved = notificationRepository.save(notification);
+      return NotificationResponse.from(saved, true);
+    }
   }
 
   @Transactional
   public int markAllAsRead(String email) {
     User user = getUserByEmail(email);
-    return notificationRepository.markAllAsReadByUserId(user.getUserId());
+    int personalCount = notificationRepository.markAllAsReadByUserId(user.getUserId());
+
+    // Mark unread broadcasts as read
+    Set<Long> readBroadcastIds =
+        notificationReadRepository.findReadNotificationIdsByUserId(user.getUserId());
+    List<Notification> unreadBroadcasts =
+        notificationRepository.findVisibleNotificationsForUser(user.getUserId()).stream()
+            .filter(n -> n.getUser() == null && !readBroadcastIds.contains(n.getNotificationId()))
+            .toList();
+
+    for (Notification n : unreadBroadcasts) {
+      NotificationRead nr =
+          NotificationRead.builder()
+              .notification(n)
+              .user(user)
+              .readAt(OffsetDateTime.now(ZoneOffset.UTC))
+              .build();
+      notificationReadRepository.save(nr);
+    }
+
+    return personalCount + unreadBroadcasts.size();
   }
 
   @Transactional
@@ -81,7 +148,7 @@ public class NotificationService {
             .type(type)
             .targetId(targetId)
             .isRead(false)
-            .createdAt(OffsetDateTime.now())
+            .createdAt(OffsetDateTime.now(ZoneOffset.UTC))
             .build();
 
     Notification saved = notificationRepository.save(notification);

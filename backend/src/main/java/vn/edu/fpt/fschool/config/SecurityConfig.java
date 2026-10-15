@@ -1,6 +1,7 @@
 package vn.edu.fpt.fschool.config;
 
 import java.util.List;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +24,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@EnableConfigurationProperties(JwtProperties.class)
 public class SecurityConfig {
 
   private final JwtAuthFilter jwtAuthFilter;
@@ -36,51 +39,60 @@ public class SecurityConfig {
   }
 
   @Bean
-  public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig)
-      throws Exception {
-    return authConfig.getAuthenticationManager();
+  public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) {
+    try {
+      return authConfig.getAuthenticationManager();
+    } catch (Exception e) {
+      throw new IllegalStateException("Failed to get AuthenticationManager", e);
+    }
   }
 
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.cors(Customizer.withDefaults())
-        .csrf(AbstractHttpConfigurer::disable)
-        .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .headers(
-            headers ->
-                headers
-                    .frameOptions(frame -> frame.sameOrigin())
-                    .contentTypeOptions(Customizer.withDefaults()))
-        .authorizeHttpRequests(
-            auth ->
-                auth
-                    // Public endpoints
-                    .requestMatchers(
-                        "/api/v1/auth/login",
-                        "/api/v1/auth/refresh-token",
-                        "/api/v1/auth/logout",
-                        "/api/v1/auth/forgot-password",
-                        "/api/v1/auth/verify-otp",
-                        "/api/v1/auth/reset-password",
-                        "/v3/api-docs/**",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html")
-                    .permitAll()
-                    // Admin restricted endpoints
-                    .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/news")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/v1/admin/**")
-                    .hasRole("ADMIN")
-                    // Other requests require authentication
-                    .anyRequest()
-                    .authenticated())
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+  @SuppressWarnings(
+      "java:S4502") // Stateless REST API using Bearer JWT tokens in Authorization headers; CSRF
+  // protection is not required
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    try {
+      http.cors(Customizer.withDefaults())
+          .csrf(AbstractHttpConfigurer::disable)
+          .sessionManagement(
+              session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+          .headers(
+              headers ->
+                  headers
+                      .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                      .contentTypeOptions(Customizer.withDefaults()))
+          .authorizeHttpRequests(
+              auth ->
+                  auth
+                      // Public endpoints
+                      .requestMatchers(
+                          "/api/v1/auth/login",
+                          "/api/v1/auth/refresh-token",
+                          "/api/v1/auth/logout",
+                          "/api/v1/auth/forgot-password",
+                          "/api/v1/auth/verify-otp",
+                          "/api/v1/auth/reset-password")
+                      .permitAll()
+                      // Admin restricted endpoints
+                      .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/news")
+                      .hasRole("ADMIN")
+                      .requestMatchers("/api/v1/admin/**")
+                      .hasRole("ADMIN")
+                      // Other requests require authentication
+                      .anyRequest()
+                      .authenticated())
+          .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-    return http.build();
+      return http.build();
+    } catch (Exception e) {
+      throw new IllegalStateException("Failed to configure SecurityFilterChain", e);
+    }
   }
 
   @Bean
+  @SuppressWarnings(
+      "HttpUrlsUsage") // Localhost and Android emulator loopback origins in local development
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOriginPatterns(

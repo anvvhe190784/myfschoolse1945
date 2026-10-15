@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:myfschoolse1945/vn/edu/fpt/screen/login_screen.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/screen/auth_gate.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/service/api_client.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -7,12 +8,15 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Widget? home;
+  final ApiClient? apiClient;
+
+  const MyApp({super.key, this.home, this.apiClient});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FPT School Login',
+      title: 'F-School',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -21,7 +25,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: home ?? AuthGate(apiClient: apiClient),
     );
   }
 }

@@ -37,6 +37,7 @@ class ScheduleModel {
   });
 
   factory ScheduleModel.fromJson(Map<String, dynamic> json) {
+    final rawCreatedAt = json['createdAt'] ?? json['created_at'];
     return ScheduleModel(
       scheduleId: json['scheduleId'] ?? json['schedule_id'],
       classId: json['classId'] ?? json['class_id'] ?? 0,
@@ -57,11 +58,7 @@ class ScheduleModel {
       lecturerName: json['lecturerName'] ?? json['lecturer_name'],
       note: json['note'],
       status: json['status'] ?? 'UPCOMING',
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString())
-              : null),
+      createdAt: rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null,
     );
   }
 

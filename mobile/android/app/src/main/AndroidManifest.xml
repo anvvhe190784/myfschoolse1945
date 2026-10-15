@@ -5,7 +5,7 @@
     <application
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:label="myfschoolse1945"
+        android:label="F-School"
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"

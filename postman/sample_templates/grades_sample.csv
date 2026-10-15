@@ -1,0 +1,4 @@
+rollNumber,classCode,courseCode,assessmentName,weight,score,feedback,status
+HE190784,SE1945,PRM393,Lab 2,10.00,9.50,Thực hiện rất tốt phần UI và Database,PUBLISHED
+SE194501,SE1945,PRM393,Lab 2,10.00,8.50,Đạt yêu cầu bài thực hành,PUBLISHED
+SE194501,SE1945,SWR302,Assignment 1,15.00,9.00,Đặc tả ca sử dụng chi tiết,PUBLISHED

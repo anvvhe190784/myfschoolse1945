@@ -4,20 +4,29 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import javax.crypto.SecretKey;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
+@SuppressWarnings({
+  "java:S2143",
+  "squid:S2143"
+}) // JJWT 0.12.x ClaimsMutator requires java.util.Date for issuedAt and expiration claims
 public class JwtUtils {
+
+  private static final String CLAIM_USER_ID = "userId";
+  private static final String CLAIM_TOKEN_TYPE = "tokenType";
 
   @Value("${jwt.secret}")
   private String jwtSecret;
 
+  @Getter
   @Value("${jwt.access-token-expiration-ms:900000}")
   private long accessTokenExpirationMs;
 
+  @Getter
   @Value("${jwt.refresh-token-expiration-ms:604800000}")
   private long refreshTokenExpirationMs;
 
@@ -26,52 +35,38 @@ public class JwtUtils {
   }
 
   public String generateAccessToken(Long userId, String email, String role, Integer tokenVersion) {
+    java.time.Instant now = java.time.Instant.now();
     return Jwts.builder()
         .subject(email)
-        .claim("userId", userId)
+        .claim(CLAIM_USER_ID, userId)
         .claim("role", role)
         .claim("tokenVersion", tokenVersion != null ? tokenVersion : 1)
-        .claim("tokenType", "ACCESS")
-        .issuedAt(new Date())
-        .expiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
+        .claim(CLAIM_TOKEN_TYPE, "ACCESS")
+        .issuedAt(java.util.Date.from(now))
+        .expiration(java.util.Date.from(now.plusMillis(accessTokenExpirationMs)))
         .signWith(getSigningKey())
         .compact();
-  }
-
-  public String generateAccessToken(Long userId, String email, String role) {
-    return generateAccessToken(userId, email, role, 1);
   }
 
   public String generateRefreshToken(Long userId, String email) {
+    java.time.Instant now = java.time.Instant.now();
     return Jwts.builder()
         .subject(email)
-        .claim("userId", userId)
-        .claim("tokenType", "REFRESH")
+        .claim(CLAIM_USER_ID, userId)
+        .claim(CLAIM_TOKEN_TYPE, "REFRESH")
         .id(java.util.UUID.randomUUID().toString())
-        .issuedAt(new Date())
-        .expiration(new Date(System.currentTimeMillis() + refreshTokenExpirationMs))
+        .issuedAt(java.util.Date.from(now))
+        .expiration(java.util.Date.from(now.plusMillis(refreshTokenExpirationMs)))
         .signWith(getSigningKey())
         .compact();
-  }
-
-  public String generateToken(Long userId, String email, String role) {
-    return generateAccessToken(userId, email, role);
   }
 
   public String getTokenType(String token) {
     try {
-      return parseToken(token).get("tokenType", String.class);
+      return parseToken(token).get(CLAIM_TOKEN_TYPE, String.class);
     } catch (Exception e) {
       return null;
     }
-  }
-
-  public long getAccessTokenExpirationMs() {
-    return accessTokenExpirationMs;
-  }
-
-  public long getRefreshTokenExpirationMs() {
-    return refreshTokenExpirationMs;
   }
 
   public Claims parseToken(String token) {
@@ -95,10 +90,6 @@ public class JwtUtils {
     return parseToken(token).get("role", String.class);
   }
 
-  public Long getUserIdFromToken(String token) {
-    return parseToken(token).get("userId", Long.class);
-  }
-
   public Integer getTokenVersionFromToken(String token) {
     try {
       Object version = parseToken(token).get("tokenVersion");
@@ -111,14 +102,18 @@ public class JwtUtils {
     }
   }
 
-  public Date getExpirationFromToken(String token) {
-    return parseToken(token).getExpiration();
+  public java.time.Instant getExpirationFromToken(String token) {
+    java.util.Date expiration = parseToken(token).getExpiration();
+    return expiration != null ? expiration.toInstant() : null;
   }
 
   public long getRemainingTtlMs(String token) {
     try {
-      Date expiration = getExpirationFromToken(token);
-      long diff = expiration.getTime() - System.currentTimeMillis();
+      java.time.Instant expiration = getExpirationFromToken(token);
+      if (expiration == null) {
+        return 0L;
+      }
+      long diff = java.time.Duration.between(java.time.Instant.now(), expiration).toMillis();
       return Math.max(diff, 0L);
     } catch (Exception e) {
       return 0L;

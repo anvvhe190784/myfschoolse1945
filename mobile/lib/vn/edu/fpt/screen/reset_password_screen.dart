@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/reset_password_controller.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/widget/bounce_tap.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
   final String otp;
+  final String? resetToken;
   final ResetPasswordController? controller;
 
   const ResetPasswordScreen({
     super.key,
     this.email = 'example@email.com',
     this.otp = '',
+    this.resetToken,
     this.controller,
   });
 
@@ -30,7 +33,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     super.initState();
     _ownsController = widget.controller == null;
     _controller = widget.controller ??
-        ResetPasswordController(email: widget.email, otp: widget.otp);
+        ResetPasswordController(
+          email: widget.email,
+          otp: widget.otp,
+          resetToken: widget.resetToken,
+        );
     _controller.addListener(_onControllerUpdate);
   }
 
@@ -163,11 +170,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 36),
 
                 // New Password Field
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Mật khẩu mới',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: labelYellow,
@@ -209,11 +216,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 24),
 
                 // Confirm Password Field
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Xác nhận mật khẩu',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: labelYellow,
@@ -255,63 +262,67 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 36),
 
                 // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _handleResetPassword,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryYellow,
-                      foregroundColor: textDark,
-                      elevation: 2,
-                      shadowColor: primaryYellow.withValues(alpha: 0.4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                BounceTap(
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _handleResetPassword,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryYellow,
+                        foregroundColor: textDark,
+                        elevation: 2,
+                        shadowColor: primaryYellow.withValues(alpha: 0.4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
+                      child: _controller.isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: textDark,
+                              ),
+                            )
+                          : const Text(
+                              'Đặt lại mật khẩu',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
-                    child: _controller.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: textDark,
-                            ),
-                          )
-                        : const Text(
-                            'Đặt lại mật khẩu',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
                 // Back to Sign In
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.arrow_back_rounded,
-                        size: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Quay lại đăng nhập',
-                        style: TextStyle(
+                BounceTap(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.arrow_back_rounded,
+                          size: 16,
                           color: Colors.grey.shade600,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          'Quay lại đăng nhập',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

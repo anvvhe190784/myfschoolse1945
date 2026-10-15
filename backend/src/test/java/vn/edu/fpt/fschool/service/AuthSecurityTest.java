@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import vn.edu.fpt.fschool.config.JwtUtils;
 import vn.edu.fpt.fschool.dto.AuthDtos.ChangePasswordRequest;
+import vn.edu.fpt.fschool.dto.AuthDtos.ForgotPasswordRequest;
 import vn.edu.fpt.fschool.dto.AuthDtos.ResetPasswordRequest;
 import vn.edu.fpt.fschool.event.NotificationEvents.PasswordChangedEvent;
 import vn.edu.fpt.fschool.model.User;
@@ -62,13 +65,48 @@ class AuthSecurityTest {
   }
 
   @Test
+  @DisplayName("Chống Spam: Từ chối gửi OTP nếu đang trong thời gian chờ cooldown 60 giây")
+  void forgotPassword_shouldReject_whenCooldownIsActive() {
+    User user = User.builder().userId(1L).email("user@fpt.edu.vn").build();
+
+    when(userRepository.findByEmailIgnoreCase("user@fpt.edu.vn")).thenReturn(Optional.of(user));
+    when(stringRedisTemplate.hasKey("otp:cooldown:user@fpt.edu.vn")).thenReturn(true);
+    when(stringRedisTemplate.getExpire("otp:cooldown:user@fpt.edu.vn", TimeUnit.SECONDS))
+        .thenReturn(45L);
+
+    ForgotPasswordRequest request = new ForgotPasswordRequest("user@fpt.edu.vn");
+
+    IllegalStateException ex =
+        assertThrows(IllegalStateException.class, () -> authService.forgotPassword(request));
+    assertTrue(ex.getMessage().contains("Mã xác thực đã được gửi"));
+    assertTrue(ex.getMessage().contains("45 giây"));
+    verify(emailService, never()).sendOtpEmail(any(), any());
+  }
+
+  @Test
+  @DisplayName("Thành công: Gửi mã OTP và kích hoạt cooldown 60 giây khi chưa có cooldown")
+  void forgotPassword_shouldSucceed_andSetCooldown_whenNoCooldown() {
+    User user = User.builder().userId(1L).email("user@fpt.edu.vn").build();
+
+    when(userRepository.findByEmailIgnoreCase("user@fpt.edu.vn")).thenReturn(Optional.of(user));
+    when(stringRedisTemplate.hasKey("otp:cooldown:user@fpt.edu.vn")).thenReturn(false);
+    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+
+    ForgotPasswordRequest request = new ForgotPasswordRequest("user@fpt.edu.vn");
+
+    var response = authService.forgotPassword(request);
+    assertTrue(response.success());
+    assertTrue(response.message().contains("Mã xác thực OTP đã được gửi"));
+    verify(valueOperations, times(1))
+        .set("otp:cooldown:user@fpt.edu.vn", "1", Duration.ofSeconds(60));
+    verify(emailService, times(1)).sendOtpEmail(eq("user@fpt.edu.vn"), any());
+  }
+
+  @Test
   @DisplayName("Bảo mật: Từ chối đặt lại mật khẩu nếu mã OTP không khớp (Chống Account Takeover)")
   void resetPassword_shouldReject_whenOtpDoesNotMatch() {
-    User user = User.builder().userId(1L).email("victim@fpt.edu.vn").build();
-
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
     when(valueOperations.get("otp:reset:victim@fpt.edu.vn")).thenReturn("654321");
-    when(userRepository.findByEmailIgnoreCase("victim@fpt.edu.vn")).thenReturn(Optional.of(user));
 
     ResetPasswordRequest request =
         new ResetPasswordRequest(
@@ -85,12 +123,9 @@ class AuthSecurityTest {
   @Test
   @DisplayName("Bảo mật: Từ chối đặt lại mật khẩu nếu mã OTP đã hết hạn")
   void resetPassword_shouldReject_whenOtpIsExpired() {
-    User user = User.builder().userId(1L).email("victim@fpt.edu.vn").build();
-
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
     when(valueOperations.get("otp:reset:victim@fpt.edu.vn"))
         .thenReturn(null); // Đã hết hạn trong Redis
-    when(userRepository.findByEmailIgnoreCase("victim@fpt.edu.vn")).thenReturn(Optional.of(user));
 
     ResetPasswordRequest request =
         new ResetPasswordRequest("victim@fpt.edu.vn", "123456", "NewPassword123!");

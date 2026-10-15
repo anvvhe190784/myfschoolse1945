@@ -14,26 +14,45 @@ public class GradeService {
 
   private final GradeRepository gradeRepository;
   private final UserRepository userRepository;
+  private final StudentAccessResolver studentAccessResolver;
+  private final vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper;
 
-  public GradeService(GradeRepository gradeRepository, UserRepository userRepository) {
+  public GradeService(
+      GradeRepository gradeRepository,
+      UserRepository userRepository,
+      StudentAccessResolver studentAccessResolver,
+      vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper) {
     this.gradeRepository = gradeRepository;
     this.userRepository = userRepository;
+    this.studentAccessResolver = studentAccessResolver;
+    this.academicMapper = academicMapper;
+  }
+
+  @Transactional(readOnly = true)
+  public List<GradeResponse> getMyGrades(String email, Long classId, Long requestedStudentId) {
+    return findMyGrades(email, classId, requestedStudentId);
   }
 
   @Transactional(readOnly = true)
   public List<GradeResponse> getMyGrades(String email, Long classId) {
-    User student =
+    return findMyGrades(email, classId, null);
+  }
+
+  private List<GradeResponse> findMyGrades(String email, Long classId, Long requestedStudentId) {
+    User currentUser =
         userRepository
             .findByEmailIgnoreCase(email)
-            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sinh viên"));
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+
+    Long targetStudentId =
+        studentAccessResolver.resolveTargetStudentId(currentUser, requestedStudentId);
 
     List<Grade> grades =
         (classId != null)
-            ? gradeRepository.findByStudent_UserIdAndClassEntity_ClassId(
-                student.getUserId(), classId)
-            : gradeRepository.findByStudent_UserId(student.getUserId());
+            ? gradeRepository.findByStudent_UserIdAndClassEntity_ClassId(targetStudentId, classId)
+            : gradeRepository.findByStudent_UserId(targetStudentId);
 
-    return grades.stream().map(this::toResponse).toList();
+    return academicMapper.toGradeResponseList(grades);
   }
 
   @Transactional(readOnly = true)
@@ -58,32 +77,18 @@ public class GradeService {
           grade.getClassEntity() != null
               && grade.getClassEntity().getLecturer() != null
               && grade.getClassEntity().getLecturer().getUserId().equals(currentUser.getUserId());
+      boolean isParentOfStudent =
+          "PARENT".equalsIgnoreCase(currentUser.getRole())
+              && grade.getStudent() != null
+              && studentAccessResolver.isParentOf(
+                  currentUser.getUserId(), grade.getStudent().getUserId());
 
-      if (!isAdmin && !isOwner && !isTeacherOfClass) {
+      if (!isAdmin && !isOwner && !isTeacherOfClass && !isParentOfStudent) {
         throw new org.springframework.security.access.AccessDeniedException(
             "Bạn không có quyền truy cập đầu điểm này");
       }
     }
 
-    return toResponse(grade);
-  }
-
-  private GradeResponse toResponse(Grade g) {
-    String classCode = g.getClassEntity() != null ? g.getClassEntity().getClassCode() : "N/A";
-    String courseName =
-        (g.getClassEntity() != null && g.getClassEntity().getCourse() != null)
-            ? g.getClassEntity().getCourse().getCourseName()
-            : "N/A";
-
-    return new GradeResponse(
-        g.getGradeId(),
-        g.getClassEntity() != null ? g.getClassEntity().getClassId() : null,
-        classCode,
-        courseName,
-        g.getAssessmentName(),
-        g.getWeight(),
-        g.getScore(),
-        g.getFeedback(),
-        g.getStatus());
+    return academicMapper.toGradeResponse(grade);
   }
 }

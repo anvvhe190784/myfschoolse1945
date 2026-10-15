@@ -33,6 +33,8 @@ class RequestModel {
   });
 
   factory RequestModel.fromJson(Map<String, dynamic> json) {
+    final rawCreatedAt = json['createdAt'] ?? json['created_at'];
+    final rawUpdatedAt = json['updatedAt'] ?? json['updated_at'];
     return RequestModel(
       requestId: json['requestId'] ?? json['request_id'],
       studentId: json['studentId'] ?? json['student_id'] ?? 0,
@@ -47,16 +49,8 @@ class RequestModel {
       status: json['status'] ?? 'PENDING',
       handlerId: json['handlerId'] ?? json['handler_id'],
       responseNote: json['responseNote'] ?? json['response_note'],
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString())
-              : null),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'].toString())
-          : (json['updated_at'] != null
-              ? DateTime.tryParse(json['updated_at'].toString())
-              : null),
+      createdAt: rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null,
+      updatedAt: rawUpdatedAt != null ? DateTime.tryParse(rawUpdatedAt.toString()) : null,
     );
   }
 

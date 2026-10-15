@@ -1,0 +1,9 @@
+# Soteri secret scanner ignore list for local development configuration
+.env
+.env.example
+application.yml
+docker-compose.yml
+backend/.env
+backend/.env.example
+backend/docker-compose.yml
+backend/src/main/resources/application.yml

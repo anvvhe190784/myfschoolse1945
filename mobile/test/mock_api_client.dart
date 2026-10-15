@@ -18,14 +18,16 @@ class MockApiClient extends ApiClient {
     return {
       'message': 'Xác thực OTP thành công!',
       'success': true,
+      'resetToken': 'mock-reset-token-12345',
     };
   }
 
   @override
   Future<Map<String, dynamic>> resetPassword({
-    required String email,
-    required String otp,
     required String newPassword,
+    String? email,
+    String? otp,
+    String? resetToken,
   }) async {
     return {
       'message': 'Đặt lại mật khẩu thành công!',

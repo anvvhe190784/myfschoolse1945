@@ -23,6 +23,8 @@ class NotificationModel {
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    final rawCreatedAt = json['createdAt'] ?? json['created_at'];
+    final parsedCreatedAt = rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null;
     return NotificationModel(
       notificationId: json['notificationId'] ?? json['notification_id'] ?? 0,
       userId: json['userId'] ?? json['user_id'],
@@ -31,11 +33,7 @@ class NotificationModel {
       type: json['type'] ?? 'SYSTEM',
       targetId: json['targetId'] ?? json['target_id'],
       isRead: json['isRead'] ?? json['is_read'] ?? false,
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
-          : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-              : DateTime.now()),
+      createdAt: parsedCreatedAt ?? DateTime.now(),
     );
   }
 

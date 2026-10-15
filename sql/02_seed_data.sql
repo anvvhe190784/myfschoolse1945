@@ -173,3 +173,16 @@ INSERT INTO notifications (user_id, title, content, type, target_id, is_read, cr
 SELECT u.user_id, 'Nhắc nhở học vụ: Nộp đơn xét tốt nghiệp', 'Hạn chót nộp đơn xét tốt nghiệp đợt 3 là ngày 15/11.', 'ACADEMIC', null, false, now() - interval '4 hour'
 FROM users u
 WHERE u.email = 'vananvu429@gmail.com';
+
+-- Broadcast Notification (user_id IS NULL)
+INSERT INTO notifications (user_id, title, content, type, target_id, is_read, created_at)
+VALUES
+    (NULL, 'Chào mừng năm học mới 2026 - 2027', 'Nhà trường chúc toàn thể sinh viên, giảng viên và phụ huynh một năm học mới nhiều thành công.', 'SYSTEM', null, false, now() - interval '5 day');
+
+-- 13. NOTIFICATION_READS SEED
+INSERT INTO notification_reads (notification_id, user_id, read_at)
+SELECT n.notification_id, u.user_id, now() - interval '1 day'
+FROM notifications n, users u
+WHERE n.user_id IS NULL AND u.email = 'vananvu429@gmail.com'
+ON CONFLICT (notification_id, user_id) DO NOTHING;
+

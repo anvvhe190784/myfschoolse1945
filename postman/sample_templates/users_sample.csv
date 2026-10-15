@@ -1,0 +1,6 @@
+rollNumber,email,fullName,phoneNumber,role,status
+SE194510,sv10@fpt.edu.vn,Nguyễn Văn Mười,0912345678,STUDENT,ACTIVE
+SE194511,sv11@fpt.edu.vn,Trần Thị Mười Một,0987654321,STUDENT,ACTIVE
+SE194512,sv12@fpt.edu.vn,Lê Văn Mười Hai,0978112233,STUDENT,ACTIVE
+GV002,giangvien2@fe.edu.vn,Phạm Quốc Huy,0933221100,LECTURER,ACTIVE
+PH003,phuhuynh3@gmail.com,Nguyễn Văn Chín,0944556677,PARENT,ACTIVE

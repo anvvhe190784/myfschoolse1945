@@ -21,6 +21,7 @@ class ClassModel {
   });
 
   factory ClassModel.fromJson(Map<String, dynamic> json) {
+    final rawCreatedAt = json['createdAt'] ?? json['created_at'];
     return ClassModel(
       classId: json['classId'] ?? json['class_id'],
       classCode: json['classCode'] ?? json['class_code'] ?? '',
@@ -29,11 +30,7 @@ class ClassModel {
       semester: json['semester'] ?? 'Fall2026',
       academicYear: json['academicYear'] ?? json['academic_year'] ?? 2026,
       roomDefault: json['roomDefault'] ?? json['room_default'],
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString())
-              : null),
+      createdAt: rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null,
     );
   }
 

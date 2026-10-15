@@ -34,11 +34,20 @@ public class AuthDtos {
   public record LogoutRequest(String refreshToken) {}
 
   public record ResetPasswordRequest(
-      @NotBlank @Email(message = "Email không hợp lệ") String email,
-      @NotBlank(message = "Mã xác thực OTP không được để trống") String otp,
+      String email,
+      String otp,
+      String resetToken,
       @NotBlank(message = "Mật khẩu mới không được để trống")
           @Size(min = 6, message = "Mật khẩu mới phải từ 6 ký tự trở lên")
-          String newPassword) {}
+          String newPassword) {
+    public ResetPasswordRequest(String email, String otp, String newPassword) {
+      this(email, otp, null, newPassword);
+    }
+
+    public ResetPasswordRequest(String resetToken, String newPassword) {
+      this(null, null, resetToken, newPassword);
+    }
+  }
 
   public record ChangePasswordRequest(
       @NotBlank(message = "Mật khẩu hiện tại không được để trống") String oldPassword,
@@ -52,6 +61,8 @@ public class AuthDtos {
   public record VerifyOtpRequest(
       @NotBlank @Email(message = "Email không hợp lệ") String email,
       @NotBlank(message = "Mã xác thực không được để trống") String otp) {}
+
+  public record VerifyOtpResponse(String message, boolean success, String resetToken) {}
 
   public record UserMeResponse(
       Long userId,

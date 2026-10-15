@@ -15,13 +15,15 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @Slf4j
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+  private static final String PROPERTY_TIMESTAMP = "timestamp";
+
   @ExceptionHandler(IllegalArgumentException.class)
   public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
     ProblemDetail problem =
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     problem.setTitle("Bad Request");
     problem.setType(URI.create("https://fschool.edu.vn/errors/bad-request"));
-    problem.setProperty("timestamp", Instant.now());
+    problem.setProperty(PROPERTY_TIMESTAMP, Instant.now());
     return problem;
   }
 
@@ -30,7 +32,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     problem.setTitle("Resource State Conflict");
     problem.setType(URI.create("https://fschool.edu.vn/errors/conflict"));
-    problem.setProperty("timestamp", Instant.now());
+    problem.setProperty(PROPERTY_TIMESTAMP, Instant.now());
     return problem;
   }
 
@@ -41,7 +43,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatus.UNAUTHORIZED, "Tài khoản hoặc mật khẩu không chính xác");
     problem.setTitle("Unauthorized");
     problem.setType(URI.create("https://fschool.edu.vn/errors/unauthorized"));
-    problem.setProperty("timestamp", Instant.now());
+    problem.setProperty(PROPERTY_TIMESTAMP, Instant.now());
     return problem;
   }
 
@@ -53,7 +55,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             "Bạn không có quyền thực hiện thao tác này (Yêu cầu quyền ADMIN)");
     problem.setTitle("Forbidden");
     problem.setType(URI.create("https://fschool.edu.vn/errors/forbidden"));
-    problem.setProperty("timestamp", Instant.now());
+    problem.setProperty(PROPERTY_TIMESTAMP, Instant.now());
     return problem;
   }
 
@@ -65,7 +67,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             "Hệ thống đang bận hoặc bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau giây lát.");
     problem.setTitle("Too Many Requests");
     problem.setType(URI.create("https://fschool.edu.vn/errors/too-many-requests"));
-    problem.setProperty("timestamp", Instant.now());
+    problem.setProperty(PROPERTY_TIMESTAMP, Instant.now());
     return problem;
   }
 
@@ -78,7 +80,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             "Máy chủ gửi email đang gặp sự cố. Vui lòng thử lại sau giây lát.");
     problem.setTitle("Mail Service Unavailable");
     problem.setType(URI.create("https://fschool.edu.vn/errors/mail-service-unavailable"));
-    problem.setProperty("timestamp", Instant.now());
+    problem.setProperty(PROPERTY_TIMESTAMP, Instant.now());
     return problem;
   }
 
@@ -91,7 +93,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             "Đã xảy ra lỗi máy chủ nội bộ. Vui lòng liên hệ quản trị viên.");
     problem.setTitle("Internal Server Error");
     problem.setType(URI.create("https://fschool.edu.vn/errors/server-error"));
-    problem.setProperty("timestamp", Instant.now());
+    problem.setProperty(PROPERTY_TIMESTAMP, Instant.now());
     return problem;
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/login_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/forgot_password_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/home_screen.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/widget/bounce_tap.dart';
 
 class LoginScreen extends StatefulWidget {
   final LoginController? controller;
@@ -92,11 +93,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 36),
 
                 // Email Field
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Email',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: labelYellow,
@@ -128,11 +129,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
 
                 // Password Field
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Mật khẩu',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: labelYellow,
@@ -174,76 +175,84 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 36),
 
                 // Sign in Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final success = await _controller.login();
-                      if (!context.mounted) return;
-                      if (success) {
-                        final studentName =
-                            _controller.loginResponse?.fullName ?? 'Sinh viên F-School';
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => HomeScreen(
-                              studentName: studentName,
+                BounceTap(
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final success = await _controller.login();
+                        if (!context.mounted) return;
+                        if (success) {
+                          final studentName =
+                              _controller.loginResponse?.fullName ?? 'Sinh viên F-School';
+                          final email = _controller.loginResponse?.email;
+                          final rollNumber = _controller.loginResponse?.rollNumber;
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => HomeScreen(
+                                studentName: studentName,
+                                email: email,
+                                rollNumber: rollNumber,
+                              ),
                             ),
-                          ),
-                        );
-                      } else if (_controller.errorMessage != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(_controller.errorMessage!),
-                            backgroundColor: Colors.red.shade700,
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryYellow,
-                      foregroundColor: const Color(0xFF1E293B),
-                      elevation: 2,
-                      shadowColor: primaryYellow.withValues(alpha: 0.4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                          );
+                        } else if (_controller.errorMessage != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(_controller.errorMessage!),
+                              backgroundColor: Colors.red.shade700,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryYellow,
+                        foregroundColor: const Color(0xFF1E293B),
+                        elevation: 2,
+                        shadowColor: primaryYellow.withValues(alpha: 0.4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
+                      child: _controller.isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF1E293B),
+                              ),
+                            )
+                          : const Text(
+                              'Đăng nhập',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
-                    child: _controller.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF1E293B),
-                            ),
-                          )
-                        : const Text(
-                            'Đăng nhập',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
 
                 // Forgot Password Button
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ForgotPasswordScreen(),
+                BounceTap(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ForgotPasswordScreen(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Quên mật khẩu?',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
-                    );
-                  },
-                  child: Text(
-                    'Quên mật khẩu?',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

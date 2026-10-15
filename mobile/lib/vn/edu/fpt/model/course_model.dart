@@ -17,17 +17,14 @@ class CourseModel {
   });
 
   factory CourseModel.fromJson(Map<String, dynamic> json) {
+    final rawCreatedAt = json['createdAt'] ?? json['created_at'];
     return CourseModel(
       courseId: json['courseId'] ?? json['course_id'],
       courseCode: json['courseCode'] ?? json['course_code'] ?? '',
       courseName: json['courseName'] ?? json['course_name'] ?? '',
       credits: json['credits'] ?? 3,
       description: json['description'],
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString())
-              : null),
+      createdAt: rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null,
     );
   }
 

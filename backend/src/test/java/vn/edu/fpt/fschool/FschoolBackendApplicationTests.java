@@ -14,7 +14,11 @@ class FschoolBackendApplicationTests {
   @Autowired private EmailService emailService;
 
   @Test
-  void contextLoads() {}
+  void contextLoads() {
+    // Verifies that the Spring application context starts up successfully without configuration
+    // errors
+    assertThat(emailService).isNotNull();
+  }
 
   @Test
   void testLoadEnvPopulatesSystemProperties() {
@@ -25,10 +29,7 @@ class FschoolBackendApplicationTests {
 
   @Test
   void testSendOtpEmailDoesNotThrow() {
-    assertDoesNotThrow(
-        () -> {
-          emailService.sendOtpEmail("test@fpt.edu.vn", "859241");
-        });
+    assertDoesNotThrow(() -> emailService.sendOtpEmail("test@fpt.edu.vn", "859241"));
   }
 
   @Test

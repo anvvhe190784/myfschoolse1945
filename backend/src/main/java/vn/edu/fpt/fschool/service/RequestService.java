@@ -14,10 +14,18 @@ public class RequestService {
 
   private final RequestRepository requestRepository;
   private final UserRepository userRepository;
+  private final StudentAccessResolver studentAccessResolver;
+  private final vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper;
 
-  public RequestService(RequestRepository requestRepository, UserRepository userRepository) {
+  public RequestService(
+      RequestRepository requestRepository,
+      UserRepository userRepository,
+      StudentAccessResolver studentAccessResolver,
+      vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper) {
     this.requestRepository = requestRepository;
     this.userRepository = userRepository;
+    this.studentAccessResolver = studentAccessResolver;
+    this.academicMapper = academicMapper;
   }
 
   @Transactional(readOnly = true)
@@ -27,21 +35,28 @@ public class RequestService {
             .findByEmailIgnoreCase(email)
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
 
-    return requestRepository.findByRequester_UserId(user.getUserId()).stream()
-        .map(this::toResponse)
-        .toList();
+    return academicMapper.toRequestResponseList(
+        requestRepository.findByRequester_UserId(user.getUserId()));
   }
 
   @Transactional
   public RequestResponse createRequest(String email, CreateRequestDto dto) {
-    User user =
+    User requester =
         userRepository
             .findByEmailIgnoreCase(email)
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
 
+    Long targetStudentId = studentAccessResolver.resolveTargetStudentId(requester, dto.studentId());
+    User student =
+        targetStudentId.equals(requester.getUserId())
+            ? requester
+            : userRepository
+                .findById(targetStudentId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học sinh"));
+
     RequestEntity entity = new RequestEntity();
-    entity.setStudent(user);
-    entity.setRequester(user);
+    entity.setStudent(student);
+    entity.setRequester(requester);
     entity.setRequestType(dto.requestType());
     entity.setTitle(dto.title());
     entity.setContent(dto.content());
@@ -49,24 +64,6 @@ public class RequestService {
     entity.setStatus("PENDING");
 
     RequestEntity saved = requestRepository.save(entity);
-    return toResponse(saved);
-  }
-
-  private RequestResponse toResponse(RequestEntity r) {
-    String studentName = r.getStudent() != null ? r.getStudent().getFullName() : "N/A";
-    String rollNumber = r.getStudent() != null ? r.getStudent().getRollNumber() : "N/A";
-
-    return new RequestResponse(
-        r.getRequestId(),
-        r.getStudent() != null ? r.getStudent().getUserId() : null,
-        studentName,
-        rollNumber,
-        r.getRequestType(),
-        r.getTitle(),
-        r.getContent(),
-        r.getAttachmentUrl(),
-        r.getStatus(),
-        r.getResponseNote(),
-        r.getCreatedAt());
+    return academicMapper.toRequestResponse(saved);
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/verify_email_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/reset_password_screen.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/widget/bounce_tap.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -69,6 +70,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           builder: (context) => ResetPasswordScreen(
             email: widget.email,
             otp: _controller.currentOtp,
+            resetToken: _controller.resetToken,
           ),
         ),
       );
@@ -145,11 +147,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 const SizedBox(height: 36),
 
                 // OTP Label
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Nhập mã xác thực 6 chữ số',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: labelYellow,
@@ -179,8 +181,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                         fontSize: 14,
                       ),
                     ),
-                    GestureDetector(
-                      onTap: _controller.canResend ? _controller.resendCode : null,
+                    BounceTap(
+                      onTap: _controller.canResend && !_controller.isLoading
+                          ? _controller.resendCode
+                          : null,
                       child: Text(
                         _controller.canResend
                             ? 'Gửi lại mã'
@@ -199,63 +203,67 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 const SizedBox(height: 36),
 
                 // Verify Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _handleVerifyEmail,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryYellow,
-                      foregroundColor: textDark,
-                      elevation: 2,
-                      shadowColor: primaryYellow.withValues(alpha: 0.4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                BounceTap(
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _handleVerifyEmail,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryYellow,
+                        foregroundColor: textDark,
+                        elevation: 2,
+                        shadowColor: primaryYellow.withValues(alpha: 0.4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
+                      child: _controller.isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: textDark,
+                              ),
+                            )
+                          : const Text(
+                              'Xác thực email',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
-                    child: _controller.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: textDark,
-                            ),
-                          )
-                        : const Text(
-                            'Xác thực email',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
                 // Back to Sign In
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.arrow_back_rounded,
-                        size: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Quay lại đăng nhập',
-                        style: TextStyle(
+                BounceTap(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.arrow_back_rounded,
+                          size: 16,
                           color: Colors.grey.shade600,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          'Quay lại đăng nhập',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -270,6 +278,15 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final hasFocus = _controller.focusNodes[index].hasFocus;
     final hasValue = _controller.controllers[index].text.isNotEmpty;
 
+    Color borderColor;
+    if (hasFocus) {
+      borderColor = primaryYellow;
+    } else if (hasValue) {
+      borderColor = labelYellow;
+    } else {
+      borderColor = Colors.grey.shade300;
+    }
+
     return Container(
       width: 48,
       height: 56,
@@ -279,9 +296,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: hasFocus
-              ? primaryYellow
-              : (hasValue ? labelYellow : Colors.grey.shade300),
+          color: borderColor,
           width: hasFocus ? 2.0 : 1.2,
         ),
       ),

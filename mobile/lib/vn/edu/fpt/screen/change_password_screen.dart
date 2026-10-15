@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/change_password_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/login_screen.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/widget/bounce_tap.dart';
 
 /// Screen for authenticated users to change their password, matching the FPT Schools design.
 class ChangePasswordScreen extends StatefulWidget {
@@ -95,19 +96,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 // 1. FPT Logo & Brand Header
                 Image.asset(
                   'assets/images/fpt_logo.png',
-                  height: 64,
+                  height: 70,
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'FPT SCHOOLS',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: brandOrange,
-                    letterSpacing: 1.2,
-                  ),
-                ),
                 const SizedBox(height: 28),
 
                 // 2. Circular Key & Lock Illustration
@@ -190,57 +182,61 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 const SizedBox(height: 22),
 
                 // 5. Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _controller.isLoading ? null : _handleSubmit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: buttonYellow,
-                      foregroundColor: textDark,
-                      elevation: 1,
-                      shadowColor: buttonYellow.withValues(alpha: 0.3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                BounceTap(
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _controller.isLoading ? null : _handleSubmit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: buttonYellow,
+                        foregroundColor: textDark,
+                        elevation: 1,
+                        shadowColor: buttonYellow.withValues(alpha: 0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
+                      child: _controller.isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: textDark,
+                              ),
+                            )
+                          : const Text(
+                              'Đổi mật khẩu',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
                     ),
-                    child: _controller.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.2,
-                              color: textDark,
-                            ),
-                          )
-                        : const Text(
-                            'Đổi mật khẩu',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
                   ),
                 ),
                 const SizedBox(height: 14),
 
                 // 6. Back Button
-                TextButton(
-                  onPressed: () {
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: textMuted,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  ),
-                  child: const Text(
-                    'Quay lại',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                BounceTap(
+                  child: TextButton(
+                    onPressed: () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: textMuted,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                    child: const Text(
+                      'Quay lại',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),

@@ -3,6 +3,9 @@ package vn.edu.fpt.fschool.service;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +13,7 @@ import vn.edu.fpt.fschool.dto.AdminDtos.*;
 import vn.edu.fpt.fschool.dto.RequestDtos.UpdateRequestStatusDto;
 import vn.edu.fpt.fschool.dto.ScheduleDtos.CreateScheduleRequest;
 import vn.edu.fpt.fschool.dto.ScheduleDtos.ScheduleResponse;
+import vn.edu.fpt.fschool.event.RequestProcessedEvent;
 import vn.edu.fpt.fschool.mapper.AcademicMapper;
 import vn.edu.fpt.fschool.mapper.UserMapper;
 import vn.edu.fpt.fschool.model.*;
@@ -23,11 +27,13 @@ public class AdminService {
   private final UserRepository userRepository;
   private final CourseRepository courseRepository;
   private final ClassRepository classRepository;
+  private final ClassEnrollmentRepository classEnrollmentRepository;
   private final ScheduleRepository scheduleRepository;
   private final RequestRepository requestRepository;
   private final PasswordEncoder passwordEncoder;
   private final UserMapper userMapper;
   private final AcademicMapper academicMapper;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   // --- USER MANAGEMENT ---
   @Transactional
@@ -56,8 +62,19 @@ public class AdminService {
   }
 
   @Transactional(readOnly = true)
+  public List<UserResponse> getAllUsers(Pageable pageable) {
+    return findUsers(pageable);
+  }
+
+  @Transactional(readOnly = true)
   public List<UserResponse> getAllUsers() {
-    return userMapper.toUserResponseList(userRepository.findAll());
+    return findUsers(PageRequest.of(0, 20));
+  }
+
+  private List<UserResponse> findUsers(Pageable pageable) {
+    int safeSize = Math.clamp(pageable.getPageSize(), 1, 50);
+    Pageable safePageable = PageRequest.of(pageable.getPageNumber(), safeSize, pageable.getSort());
+    return userMapper.toUserResponseList(userRepository.findAll(safePageable).getContent());
   }
 
   @Transactional
@@ -99,8 +116,10 @@ public class AdminService {
   @Transactional
   public ClassResponse createClass(CreateClassRequest req) {
     log.info("Admin creating class: {}", req.classCode());
-    if (classRepository.existsByClassCode(req.classCode())) {
-      throw new IllegalArgumentException("Mã lớp đã tồn tại: " + req.classCode());
+    if (classRepository.existsByClassCodeAndCourse_CourseIdAndSemester(
+        req.classCode(), req.courseId(), req.semester())) {
+      throw new IllegalArgumentException(
+          "Lớp học phần đã tồn tại cho mã lớp " + req.classCode() + " với môn học và học kỳ này!");
     }
 
     Course course =
@@ -135,6 +154,21 @@ public class AdminService {
   @Transactional(readOnly = true)
   public List<ClassResponse> getAllClasses() {
     return academicMapper.toClassResponseList(classRepository.findAll());
+  }
+
+  @Transactional(readOnly = true)
+  public List<ClassResponse> getStudentClasses(Long studentId, String semester) {
+    log.info("Admin fetching classes for student ID: {} semester: {}", studentId, semester);
+    List<ClassEnrollment> enrollments;
+    if (semester != null && !semester.isBlank()) {
+      enrollments =
+          classEnrollmentRepository.findByStudent_UserIdAndClassEntity_Semester(
+              studentId, semester);
+    } else {
+      enrollments = classEnrollmentRepository.findByStudent_UserIdAndStatus(studentId, "ENROLLED");
+    }
+    List<ClassEntity> classes = enrollments.stream().map(ClassEnrollment::getClassEntity).toList();
+    return academicMapper.toClassResponseList(classes);
   }
 
   @Transactional
@@ -184,9 +218,29 @@ public class AdminService {
                 () -> new IllegalArgumentException("Không tìm thấy đơn từ ID: " + requestId));
     User admin = userRepository.findByEmailIgnoreCase(adminEmail).orElse(null);
 
-    entity.setStatus(dto.status().toUpperCase());
+    RequestStatus currentStatus = RequestStatus.fromString(entity.getStatus());
+    RequestStatus targetStatus = RequestStatus.fromString(dto.status());
+
+    if (!currentStatus.canTransitionTo(targetStatus)) {
+      throw new IllegalStateException(
+          "Không thể chuyển trạng thái đơn từ từ " + currentStatus + " sang " + targetStatus);
+    }
+
+    entity.setStatus(targetStatus.name());
     entity.setHandler(admin);
     entity.setResponseNote(dto.responseNote());
-    requestRepository.save(entity);
+    RequestEntity saved = requestRepository.save(entity);
+
+    Long requesterId = entity.getRequester() != null ? entity.getRequester().getUserId() : null;
+    if (requesterId != null) {
+      applicationEventPublisher.publishEvent(
+          new RequestProcessedEvent(
+              saved.getRequestId(),
+              requesterId,
+              saved.getTitle(),
+              currentStatus.name(),
+              targetStatus.name(),
+              dto.responseNote()));
+    }
   }
 }

@@ -6,6 +6,7 @@ void main() {
   testWidgets('App smoke test renders LoginScreen', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
 
     // Verify that LoginScreen is rendered
     expect(find.text('Đăng nhập'), findsNWidgets(2));

@@ -15,6 +15,7 @@ class ParentStudentModel {
   });
 
   factory ParentStudentModel.fromJson(Map<String, dynamic> json) {
+    final rawCreatedAt = json['createdAt'] ?? json['created_at'];
     return ParentStudentModel(
       id: json['id'],
       parentId: json['parentId'] ?? json['parent_id'] ?? 0,
@@ -22,11 +23,7 @@ class ParentStudentModel {
       relationshipType: json['relationshipType'] ??
           json['relationship_type'] ??
           'PARENT',
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString())
-              : null),
+      createdAt: rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null,
     );
   }
 

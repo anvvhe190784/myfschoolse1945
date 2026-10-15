@@ -11,14 +11,17 @@ import vn.edu.fpt.fschool.repository.ClubRepository;
 public class ClubService {
 
   private final ClubRepository clubRepository;
+  private final vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper;
 
-  public ClubService(ClubRepository clubRepository) {
+  public ClubService(
+      ClubRepository clubRepository, vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper) {
     this.clubRepository = clubRepository;
+    this.academicMapper = academicMapper;
   }
 
   @Transactional(readOnly = true)
   public List<ClubResponse> getAllActiveClubs() {
-    return clubRepository.findByIsActiveTrue().stream().map(this::toResponse).toList();
+    return academicMapper.toClubResponseList(clubRepository.findByIsActiveTrue());
   }
 
   @Transactional(readOnly = true)
@@ -28,21 +31,6 @@ public class ClubService {
             .findById(id)
             .orElseThrow(
                 () -> new IllegalArgumentException("Không tìm thấy câu lạc bộ với ID: " + id));
-    return toResponse(club);
-  }
-
-  private ClubResponse toResponse(Club c) {
-    String leaderName = c.getLeader() != null ? c.getLeader().getFullName() : "N/A";
-    return new ClubResponse(
-        c.getClubId(),
-        c.getClubName(),
-        c.getDescription(),
-        c.getCategory(),
-        c.getAvatarUrl(),
-        c.getBannerUrl(),
-        leaderName,
-        c.getContactEmail(),
-        c.getMemberCount(),
-        c.getIsActive());
+    return academicMapper.toClubResponse(club);
   }
 }

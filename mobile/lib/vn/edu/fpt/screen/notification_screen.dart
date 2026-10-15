@@ -301,8 +301,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.notifications_none_rounded, size: 48, color: Color(0xFF94A3B8)),

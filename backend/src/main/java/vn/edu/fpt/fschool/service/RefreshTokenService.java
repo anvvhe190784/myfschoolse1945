@@ -112,30 +112,35 @@ public class RefreshTokenService {
 
     if (stringRedisTemplate != null) {
       try {
-        String tokenKey = REFRESH_PREFIX + token;
-        String email = stringRedisTemplate.opsForValue().get(tokenKey);
-        stringRedisTemplate.delete(tokenKey);
-        if (email != null) {
-          String normalizedEmail = email.trim().toLowerCase();
-          stringRedisTemplate.opsForSet().remove(USER_REFRESH_SET_PREFIX + normalizedEmail, token);
-          stringRedisTemplate.delete(USER_REFRESH_PREFIX + normalizedEmail);
-        }
-        log.debug("Đã thu hồi Refresh Token trên Redis");
+        revokeFromRedis(token);
+        return;
       } catch (Exception ex) {
         log.error("Lỗi khi xóa Refresh Token trên Redis: {}", ex.getMessage());
-        String email = inMemoryTokenStore.remove(token);
-        if (email != null) {
-          inMemoryUserTokenStore.remove(email);
-          var set = inMemoryUserTokensSet.get(email);
-          if (set != null) set.remove(token);
-        }
       }
-    } else {
-      String email = inMemoryTokenStore.remove(token);
-      if (email != null) {
-        inMemoryUserTokenStore.remove(email);
-        var set = inMemoryUserTokensSet.get(email);
-        if (set != null) set.remove(token);
+    }
+
+    revokeFromInMemory(token);
+  }
+
+  private void revokeFromRedis(String token) {
+    String tokenKey = REFRESH_PREFIX + token;
+    String email = stringRedisTemplate.opsForValue().get(tokenKey);
+    stringRedisTemplate.delete(tokenKey);
+    if (email != null) {
+      String normalizedEmail = email.trim().toLowerCase();
+      stringRedisTemplate.opsForSet().remove(USER_REFRESH_SET_PREFIX + normalizedEmail, token);
+      stringRedisTemplate.delete(USER_REFRESH_PREFIX + normalizedEmail);
+    }
+    log.debug("Đã thu hồi Refresh Token trên Redis");
+  }
+
+  private void revokeFromInMemory(String token) {
+    String email = inMemoryTokenStore.remove(token);
+    if (email != null) {
+      inMemoryUserTokenStore.remove(email);
+      var set = inMemoryUserTokensSet.get(email);
+      if (set != null) {
+        set.remove(token);
       }
     }
   }
@@ -153,44 +158,43 @@ public class RefreshTokenService {
     log.warn("CẢNH BÁO AN NINH: Thu hồi toàn bộ Refresh Token của user {}", normalizedEmail);
     if (stringRedisTemplate != null) {
       try {
-        String userSetKey = USER_REFRESH_SET_PREFIX + normalizedEmail;
-        java.util.Set<String> tokens = stringRedisTemplate.opsForSet().members(userSetKey);
-        if (tokens != null) {
-          for (String t : tokens) {
-            stringRedisTemplate.delete(REFRESH_PREFIX + t);
-          }
-        }
-        stringRedisTemplate.delete(userSetKey);
-
-        String userKey = USER_REFRESH_PREFIX + normalizedEmail;
-        String currentToken = stringRedisTemplate.opsForValue().get(userKey);
-        if (currentToken != null) {
-          stringRedisTemplate.delete(REFRESH_PREFIX + currentToken);
-        }
-        stringRedisTemplate.delete(userKey);
+        revokeAllFromRedis(normalizedEmail);
+        return;
       } catch (Exception ex) {
         log.error("Lỗi khi thu hồi toàn bộ token trên Redis: {}", ex.getMessage());
-        String currentToken = inMemoryUserTokenStore.remove(normalizedEmail);
-        if (currentToken != null) {
-          inMemoryTokenStore.remove(currentToken);
-        }
-        var tokens = inMemoryUserTokensSet.remove(normalizedEmail);
-        if (tokens != null) {
-          for (String t : tokens) {
-            inMemoryTokenStore.remove(t);
-          }
-        }
       }
-    } else {
-      String currentToken = inMemoryUserTokenStore.remove(normalizedEmail);
-      if (currentToken != null) {
-        inMemoryTokenStore.remove(currentToken);
+    }
+
+    revokeAllFromInMemory(normalizedEmail);
+  }
+
+  private void revokeAllFromRedis(String normalizedEmail) {
+    String userSetKey = USER_REFRESH_SET_PREFIX + normalizedEmail;
+    java.util.Set<String> tokens = stringRedisTemplate.opsForSet().members(userSetKey);
+    if (tokens != null) {
+      for (String t : tokens) {
+        stringRedisTemplate.delete(REFRESH_PREFIX + t);
       }
-      var tokens = inMemoryUserTokensSet.remove(normalizedEmail);
-      if (tokens != null) {
-        for (String t : tokens) {
-          inMemoryTokenStore.remove(t);
-        }
+    }
+    stringRedisTemplate.delete(userSetKey);
+
+    String userKey = USER_REFRESH_PREFIX + normalizedEmail;
+    String currentToken = stringRedisTemplate.opsForValue().get(userKey);
+    if (currentToken != null) {
+      stringRedisTemplate.delete(REFRESH_PREFIX + currentToken);
+    }
+    stringRedisTemplate.delete(userKey);
+  }
+
+  private void revokeAllFromInMemory(String normalizedEmail) {
+    String currentToken = inMemoryUserTokenStore.remove(normalizedEmail);
+    if (currentToken != null) {
+      inMemoryTokenStore.remove(currentToken);
+    }
+    var tokens = inMemoryUserTokensSet.remove(normalizedEmail);
+    if (tokens != null) {
+      for (String t : tokens) {
+        inMemoryTokenStore.remove(t);
       }
     }
   }

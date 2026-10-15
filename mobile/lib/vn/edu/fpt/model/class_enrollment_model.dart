@@ -15,16 +15,13 @@ class ClassEnrollmentModel {
   });
 
   factory ClassEnrollmentModel.fromJson(Map<String, dynamic> json) {
+    final rawEnrolledAt = json['enrolledAt'] ?? json['enrolled_at'];
     return ClassEnrollmentModel(
       enrollmentId: json['enrollmentId'] ?? json['enrollment_id'],
       classId: json['classId'] ?? json['class_id'] ?? 0,
       studentId: json['studentId'] ?? json['student_id'] ?? 0,
       status: json['status'] ?? 'ENROLLED',
-      enrolledAt: json['enrolledAt'] != null
-          ? DateTime.tryParse(json['enrolledAt'].toString())
-          : (json['enrolled_at'] != null
-              ? DateTime.tryParse(json['enrolled_at'].toString())
-              : null),
+      enrolledAt: rawEnrolledAt != null ? DateTime.tryParse(rawEnrolledAt.toString()) : null,
     );
   }
 

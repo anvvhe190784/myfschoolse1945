@@ -1,7 +1,7 @@
 package vn.edu.fpt.fschool.event;
 
 import java.time.OffsetDateTime;
-import java.util.List;
+import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -13,7 +13,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import vn.edu.fpt.fschool.event.NotificationEvents.NewsPublishedEvent;
 import vn.edu.fpt.fschool.event.NotificationEvents.PasswordChangedEvent;
 import vn.edu.fpt.fschool.model.Notification;
-import vn.edu.fpt.fschool.model.User;
 import vn.edu.fpt.fschool.repository.NotificationRepository;
 import vn.edu.fpt.fschool.repository.UserRepository;
 
@@ -42,7 +41,7 @@ public class NotificationEventListener {
                       .type("SECURITY")
                       .targetId(null)
                       .isRead(false)
-                      .createdAt(OffsetDateTime.now())
+                      .createdAt(OffsetDateTime.now(ZoneOffset.UTC))
                       .build();
 
               notificationRepository.save(notification);
@@ -54,34 +53,76 @@ public class NotificationEventListener {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
   public void onNewsPublished(NewsPublishedEvent event) {
-    log.info("[EVENT] Xử lý sự kiện đăng tin mới: {} (ID: {})", event.title(), event.newsId());
-    List<User> students = userRepository.findByRole("STUDENT");
-    if (students.isEmpty()) {
-      log.warn("[EVENT] Không tìm thấy học sinh nào để gửi thông báo tin tức");
-      return;
-    }
+    log.info(
+        "[EVENT] Xử lý sự kiện đăng tin mới broadcast: {} (ID: {})", event.title(), event.newsId());
 
     String summary =
         (event.summary() != null && !event.summary().isBlank())
             ? event.summary()
             : "Nhà trường vừa cập nhật thông báo tin tức mới, sinh viên vui lòng vào xem chi tiết.";
 
-    List<Notification> notifications =
-        students.stream()
-            .map(
-                student ->
-                    Notification.builder()
-                        .user(student)
-                        .title("Tin tức mới: " + event.title())
-                        .content(summary)
-                        .type("NEWS")
-                        .targetId(event.newsId())
-                        .isRead(false)
-                        .createdAt(OffsetDateTime.now())
-                        .build())
-            .toList();
+    // Tạo đúng 1 bản ghi thông báo Broadcast toàn trường (user = null)
+    // Loại bỏ hoàn toàn vòng lặp fan-out write 25.000 dòng gây tràn RAM và sập DB
+    Notification broadcastNotification =
+        Notification.builder()
+            .user(null) // Broadcast toàn trường
+            .title("Tin tức mới: " + event.title())
+            .content(summary)
+            .type("NEWS")
+            .targetId(event.newsId())
+            .isRead(false)
+            .createdAt(OffsetDateTime.now(ZoneOffset.UTC))
+            .build();
 
-    notificationRepository.saveAll(notifications);
-    log.info("[EVENT] Đã gửi thông báo tin tức đến {} học sinh", notifications.size());
+    notificationRepository.save(broadcastNotification);
+    log.info(
+        "[EVENT] Đã tạo thông báo broadcast toàn trường thành công (ID: {})",
+        broadcastNotification.getNotificationId());
+  }
+
+  @Async
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+  public void onRequestProcessed(RequestProcessedEvent event) {
+    log.info(
+        "[EVENT] Xử lý sự kiện xử lý đơn từ ID: {} cho requesterId: {}",
+        event.requestId(),
+        event.requesterId());
+    userRepository
+        .findById(event.requesterId())
+        .ifPresent(
+            requester -> {
+              String statusDesc =
+                  switch (event.newStatus()) {
+                    case "APPROVED" -> "ĐÃ ĐƯỢC PHÊ DUYỆT";
+                    case "REJECTED" -> "BỊ TỪ CHỐI";
+                    case "PROCESSING" -> "ĐANG ĐƯỢC XỬ LÝ";
+                    case "CANCELLED" -> "ĐÃ HỦY";
+                    default -> event.newStatus();
+                  };
+
+              String noteContent =
+                  (event.responseNote() != null && !event.responseNote().isBlank())
+                      ? "\nGhi chú: " + event.responseNote()
+                      : "";
+
+              Notification notification =
+                  Notification.builder()
+                      .user(requester)
+                      .title("Đơn từ: " + event.title())
+                      .content(
+                          "Đơn từ của bạn đã chuyển sang trạng thái: "
+                              + statusDesc
+                              + "."
+                              + noteContent)
+                      .type("REQUEST")
+                      .targetId(event.requestId())
+                      .isRead(false)
+                      .createdAt(OffsetDateTime.now(ZoneOffset.UTC))
+                      .build();
+
+              notificationRepository.save(notification);
+              log.info("[EVENT] Đã tạo thông báo đơn từ cho requester: {}", requester.getEmail());
+            });
   }
 }

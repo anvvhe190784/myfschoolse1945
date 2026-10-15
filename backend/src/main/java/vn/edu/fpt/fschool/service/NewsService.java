@@ -1,9 +1,17 @@
 package vn.edu.fpt.fschool.service;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.fpt.fschool.dto.NewsDtos.CreateNewsRequest;
@@ -15,43 +23,85 @@ import vn.edu.fpt.fschool.repository.NewsRepository;
 import vn.edu.fpt.fschool.repository.UserRepository;
 
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class NewsService {
+
+  public static final String NEWS_VIEWS_KEY = "news:views";
 
   private final NewsRepository newsRepository;
   private final UserRepository userRepository;
   private final ApplicationEventPublisher eventPublisher;
+  private final StringRedisTemplate stringRedisTemplate;
+
+  private final Map<Long, AtomicLong> inMemoryViews = new ConcurrentHashMap<>();
+
+  public NewsService(
+      NewsRepository newsRepository,
+      UserRepository userRepository,
+      ApplicationEventPublisher eventPublisher,
+      @Autowired(required = false) StringRedisTemplate stringRedisTemplate) {
+    this.newsRepository = newsRepository;
+    this.userRepository = userRepository;
+    this.eventPublisher = eventPublisher;
+    this.stringRedisTemplate = stringRedisTemplate;
+  }
 
   @Transactional(readOnly = true)
   public List<NewsResponse> getAllPublishedNews(Integer limit) {
-    List<News> list = newsRepository.findByIsPublishedTrueOrderByPublishedAtDesc();
-    if (limit != null && limit > 0) {
-      list = list.stream().limit(limit).toList();
-    }
-    return list.stream().map(this::toResponse).toList();
+    return findPublishedNews(limit);
   }
 
   @Transactional(readOnly = true)
   public List<NewsResponse> getAllPublishedNews() {
-    return getAllPublishedNews(null);
+    return findPublishedNews(null);
   }
 
-  @Transactional
+  private List<NewsResponse> findPublishedNews(Integer limit) {
+    int safeLimit = (limit != null && limit > 0) ? Math.min(limit, 50) : 20;
+    Pageable pageable = PageRequest.of(0, safeLimit);
+    List<News> list =
+        newsRepository.findByIsPublishedTrueOrderByPublishedAtDesc(pageable).getContent();
+    return list.stream().map(this::toResponse).toList();
+  }
+
+  @Transactional(readOnly = true)
   public NewsResponse getNewsDetail(Long id) {
-    News news = newsRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tin tức với ID: " + id));
+    News news =
+        newsRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new IllegalArgumentException("Không tìm thấy tin tức với ID: " + id));
 
-    // Increment views count
-    news.setViewsCount(news.getViewsCount() + 1);
-    newsRepository.save(news);
+    long pendingViews;
+    if (stringRedisTemplate != null) {
+      try {
+        pendingViews =
+            stringRedisTemplate.opsForHash().increment(NEWS_VIEWS_KEY, id.toString(), 1L);
+      } catch (Exception e) {
+        log.warn("Không thể tăng views trong Redis cho newsId {}: {}", id, e.getMessage());
+        pendingViews = inMemoryViews.computeIfAbsent(id, k -> new AtomicLong(0)).incrementAndGet();
+      }
+    } else {
+      pendingViews = inMemoryViews.computeIfAbsent(id, k -> new AtomicLong(0)).incrementAndGet();
+    }
 
-    return toResponse(news);
+    int totalViews = (news.getViewsCount() != null ? news.getViewsCount() : 0) + (int) pendingViews;
+    return toResponseWithViews(news, totalViews);
+  }
+
+  public Map<Long, AtomicLong> getInMemoryViews() {
+    return inMemoryViews;
   }
 
   @Transactional
   public NewsResponse createNews(CreateNewsRequest req, String adminEmail) {
-    User admin = userRepository.findByEmailIgnoreCase(adminEmail)
-        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản quản trị: " + adminEmail));
+    User admin =
+        userRepository
+            .findByEmailIgnoreCase(adminEmail)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Không tìm thấy tài khoản quản trị: " + adminEmail));
 
     if (!"ADMIN".equalsIgnoreCase(admin.getRole())) {
       throw new IllegalStateException("Chỉ tài khoản ADMIN mới có quyền tạo tin tức");
@@ -63,21 +113,29 @@ public class NewsService {
     news.setContent(req.content().trim());
     news.setThumbnailUrl(req.thumbnailUrl());
     news.setAuthor(admin);
-    news.setCategory(req.category() != null && !req.category().isBlank() ? req.category().toUpperCase() : "GENERAL");
+    news.setCategory(
+        req.category() != null && !req.category().isBlank()
+            ? req.category().toUpperCase()
+            : "GENERAL");
     news.setViewsCount(0);
     news.setIsPublished(true);
-    news.setPublishedAt(OffsetDateTime.now());
-    news.setCreatedAt(OffsetDateTime.now());
+    news.setPublishedAt(OffsetDateTime.now(ZoneOffset.UTC));
+    news.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
 
     News saved = newsRepository.save(news);
 
     // Phát sự kiện miền: Tin tức mới đã xuất bản (NotificationEventListener xử lý ngầm)
-    eventPublisher.publishEvent(new NewsPublishedEvent(saved.getNewsId(), saved.getTitle(), saved.getSummary()));
+    eventPublisher.publishEvent(
+        new NewsPublishedEvent(saved.getNewsId(), saved.getTitle(), saved.getSummary()));
 
     return toResponse(saved);
   }
 
   private NewsResponse toResponse(News n) {
+    return toResponseWithViews(n, n.getViewsCount() != null ? n.getViewsCount() : 0);
+  }
+
+  private NewsResponse toResponseWithViews(News n, int views) {
     String authorName = n.getAuthor() != null ? n.getAuthor().getFullName() : "Ban Truyền Thông";
     return new NewsResponse(
         n.getNewsId(),
@@ -87,8 +145,7 @@ public class NewsService {
         n.getThumbnailUrl(),
         authorName,
         n.getCategory(),
-        n.getViewsCount(),
-        n.getPublishedAt()
-    );
+        views,
+        n.getPublishedAt());
   }
 }

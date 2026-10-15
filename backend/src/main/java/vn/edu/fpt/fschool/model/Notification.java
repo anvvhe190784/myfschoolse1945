@@ -2,6 +2,7 @@ package vn.edu.fpt.fschool.model;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import lombok.*;
 
 @Entity
@@ -19,7 +20,7 @@ public class Notification {
   private Long notificationId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
+  @JoinColumn(name = "user_id")
   private User user;
 
   @Column(name = "title", nullable = false)
@@ -44,7 +45,7 @@ public class Notification {
   @PrePersist
   protected void onCreate() {
     if (createdAt == null) {
-      createdAt = OffsetDateTime.now();
+      createdAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
     if (isRead == null) {
       isRead = false;

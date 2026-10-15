@@ -27,6 +27,7 @@ class GradeModel {
   });
 
   factory GradeModel.fromJson(Map<String, dynamic> json) {
+    final rawUpdatedAt = json['updatedAt'] ?? json['updated_at'];
     return GradeModel(
       gradeId: json['gradeId'] ?? json['grade_id'],
       classId: json['classId'] ?? json['class_id'] ?? 0,
@@ -40,11 +41,7 @@ class GradeModel {
       score: (json['score'] as num?)?.toDouble(),
       feedback: json['feedback'],
       status: json['status'] ?? 'PUBLISHED',
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'].toString())
-          : (json['updated_at'] != null
-              ? DateTime.tryParse(json['updated_at'].toString())
-              : null),
+      updatedAt: rawUpdatedAt != null ? DateTime.tryParse(rawUpdatedAt.toString()) : null,
     );
   }
 

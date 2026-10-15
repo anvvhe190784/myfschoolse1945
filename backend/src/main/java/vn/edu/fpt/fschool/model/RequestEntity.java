@@ -2,9 +2,14 @@ package vn.edu.fpt.fschool.model;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "requests")
+@Getter
+@Setter
 public class RequestEntity {
 
   @Id
@@ -52,109 +57,13 @@ public class RequestEntity {
 
   @PrePersist
   protected void onCreate() {
-    if (createdAt == null) createdAt = OffsetDateTime.now();
-    if (updatedAt == null) updatedAt = OffsetDateTime.now();
+    if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+    if (updatedAt == null) updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     if (status == null) status = "PENDING";
   }
 
   @PreUpdate
   protected void onUpdate() {
-    updatedAt = OffsetDateTime.now();
-  }
-
-  public Long getRequestId() {
-    return requestId;
-  }
-
-  public void setRequestId(Long requestId) {
-    this.requestId = requestId;
-  }
-
-  public User getStudent() {
-    return student;
-  }
-
-  public void setStudent(User student) {
-    this.student = student;
-  }
-
-  public User getRequester() {
-    return requester;
-  }
-
-  public void setRequester(User requester) {
-    this.requester = requester;
-  }
-
-  public String getRequestType() {
-    return requestType;
-  }
-
-  public void setRequestType(String requestType) {
-    this.requestType = requestType;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public String getContent() {
-    return content;
-  }
-
-  public void setContent(String content) {
-    this.content = content;
-  }
-
-  public String getAttachmentUrl() {
-    return attachmentUrl;
-  }
-
-  public void setAttachmentUrl(String attachmentUrl) {
-    this.attachmentUrl = attachmentUrl;
-  }
-
-  public String getStatus() {
-    return status;
-  }
-
-  public void setStatus(String status) {
-    this.status = status;
-  }
-
-  public User getHandler() {
-    return handler;
-  }
-
-  public void setHandler(User handler) {
-    this.handler = handler;
-  }
-
-  public String getResponseNote() {
-    return responseNote;
-  }
-
-  public void setResponseNote(String responseNote) {
-    this.responseNote = responseNote;
-  }
-
-  public OffsetDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(OffsetDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public OffsetDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(OffsetDateTime updatedAt) {
-    this.updatedAt = updatedAt;
+    updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
   }
 }

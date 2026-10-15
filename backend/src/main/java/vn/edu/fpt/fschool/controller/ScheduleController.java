@@ -1,20 +1,16 @@
 package vn.edu.fpt.fschool.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.fpt.fschool.dto.ScheduleDtos.ScheduleResponse;
 import vn.edu.fpt.fschool.service.ScheduleService;
 
 @RestController
 @RequestMapping("/api/v1/schedules")
-@Tag(
-    name = "2. Schedules (Lịch học)",
-    description = "Quản lý và tra cứu lịch học cho Sinh viên / Giảng viên")
 public class ScheduleController {
 
   private final ScheduleService scheduleService;
@@ -24,20 +20,21 @@ public class ScheduleController {
   }
 
   @GetMapping
-  @Operation(
-      summary = "Danh sách lịch học (Use Case 4: ListSchedule)",
-      description = "Xem danh sách lịch học theo ngày hoặc toàn bộ")
   public ResponseEntity<List<ScheduleResponse>> getSchedules(
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate date) {
+      Authentication authentication,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+      @RequestParam(required = false) Long studentId) {
+    String email = (authentication != null) ? authentication.getName() : null;
+    if (email != null) {
+      return ResponseEntity.ok(scheduleService.getSchedules(email, date, studentId));
+    }
     return ResponseEntity.ok(scheduleService.getSchedules(date));
   }
 
   @GetMapping("/{id}")
-  @Operation(
-      summary = "Chi tiết lịch học (Use Case 9: ViewScheduleDetail)",
-      description = "Xem chi tiết một buổi học theo ID")
-  public ResponseEntity<ScheduleResponse> getScheduleDetail(@PathVariable Long id) {
-    return ResponseEntity.ok(scheduleService.getScheduleDetail(id));
+  public ResponseEntity<ScheduleResponse> getScheduleDetail(
+      Authentication authentication, @PathVariable Long id) {
+    String email = (authentication != null) ? authentication.getName() : null;
+    return ResponseEntity.ok(scheduleService.getScheduleDetail(id, email));
   }
 }

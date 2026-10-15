@@ -31,6 +31,9 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final rawResetTokenExpiresAt = json['resetTokenExpiresAt'] ?? json['reset_token_expires_at'];
+    final rawCreatedAt = json['createdAt'] ?? json['created_at'];
+    final rawUpdatedAt = json['updatedAt'] ?? json['updated_at'];
     return UserModel(
       userId: json['userId'] ?? json['user_id'],
       rollNumber: json['rollNumber'] ?? json['roll_number'],
@@ -42,21 +45,11 @@ class UserModel {
       role: json['role'] ?? 'STUDENT',
       status: json['status'] ?? 'ACTIVE',
       resetToken: json['resetToken'] ?? json['reset_token'],
-      resetTokenExpiresAt: json['resetTokenExpiresAt'] != null
-          ? DateTime.tryParse(json['resetTokenExpiresAt'].toString())
-          : (json['reset_token_expires_at'] != null
-              ? DateTime.tryParse(json['reset_token_expires_at'].toString())
-              : null),
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : (json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString())
-              : null),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'].toString())
-          : (json['updated_at'] != null
-              ? DateTime.tryParse(json['updated_at'].toString())
-              : null),
+      resetTokenExpiresAt: rawResetTokenExpiresAt != null
+          ? DateTime.tryParse(rawResetTokenExpiresAt.toString())
+          : null,
+      createdAt: rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null,
+      updatedAt: rawUpdatedAt != null ? DateTime.tryParse(rawUpdatedAt.toString()) : null,
     );
   }
 

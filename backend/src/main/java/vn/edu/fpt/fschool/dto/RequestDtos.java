@@ -18,6 +18,7 @@ public class RequestDtos {
       OffsetDateTime createdAt) {}
 
   public record CreateRequestDto(
+      Long studentId,
       @NotBlank(message = "Loại đơn không được để trống") String requestType,
       @NotBlank(message = "Tiêu đề không được để trống") String title,
       @NotBlank(message = "Nội dung không được để trống") String content,

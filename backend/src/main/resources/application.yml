@@ -10,7 +10,7 @@ spring:
       enabled: true
 
   mvc:
-    problemdetail:
+    problemdetails:
       enabled: true
 
   docker:
@@ -31,6 +31,9 @@ spring:
           starttls:
             enable: true
             required: true
+          connectiontimeout: 3000
+          timeout: 3000
+          writetimeout: 3000
 
   data:
     redis:
@@ -54,14 +57,6 @@ spring:
         jdbc:
           batch_size: 25
 
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui/index.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-    doc-expansion: none
 
 jwt:
   secret: ${JWT_SECRET}
