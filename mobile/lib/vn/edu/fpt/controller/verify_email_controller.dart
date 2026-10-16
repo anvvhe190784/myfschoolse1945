@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/service/api_client.dart';
 
 /// Controller for VerifyEmailScreen managing OTP inputs, paste logic, and countdown timer.
@@ -32,6 +33,19 @@ class VerifyEmailController extends ChangeNotifier {
     startTimer();
     for (int i = 0; i < otpLength; i++) {
       this.focusNodes[i].addListener(notifyListeners);
+      final index = i;
+      this.focusNodes[i].onKeyEvent = (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.backspace) {
+          if (this.controllers[index].text.isEmpty && index > 0) {
+            this.controllers[index - 1].clear();
+            this.focusNodes[index - 1].requestFocus();
+            notifyListeners();
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      };
     }
   }
 
@@ -83,29 +97,68 @@ class VerifyEmailController extends ChangeNotifier {
   }
 
   void handleOtpChanged(String value, int index, BuildContext? context) {
-    if (value.length > 1) {
-      // User pasted multiple characters
-      final digits = value.replaceAll(RegExp(r'\D'), '');
-      for (int i = 0; i < otpLength; i++) {
-        if (i < digits.length) {
-          controllers[i].text = digits[i];
-        }
-      }
-      if (context != null) {
-        FocusScope.of(context).unfocus();
-      }
-      notifyListeners();
+    if (value.length > 2) {
+      _handleOtpPaste(value, context);
       return;
     }
 
-    if (value.isNotEmpty) {
-      if (index < otpLength - 1 && context != null) {
-        focusNodes[index + 1].requestFocus();
-      } else if (context != null) {
+    if (value.length == 2) {
+      _handleOverflowInput(value, index, context);
+      return;
+    }
+
+    _handleSingleOtpInput(value, index, context);
+    notifyListeners();
+  }
+
+  void _handleOverflowInput(String value, int index, BuildContext? context) {
+    if (index < otpLength - 1) {
+      controllers[index].text = value[0];
+      controllers[index + 1].text = value[1];
+      _advanceFocusAfterOverflow(index, context);
+    } else {
+      controllers[index].text = value[value.length - 1];
+      if (context != null) {
         focusNodes[index].unfocus();
       }
     }
     notifyListeners();
+  }
+
+  void _advanceFocusAfterOverflow(int index, BuildContext? context) {
+    if (context == null) return;
+    if (index + 1 < otpLength - 1) {
+      focusNodes[index + 2].requestFocus();
+    } else {
+      focusNodes[index + 1].requestFocus();
+    }
+  }
+
+  void _handleOtpPaste(String value, BuildContext? context) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    for (int i = 0; i < otpLength; i++) {
+      if (i < digits.length) {
+        controllers[i].text = digits[i];
+      }
+    }
+    if (context != null) {
+      FocusScope.of(context).unfocus();
+    }
+    notifyListeners();
+  }
+
+  void _handleSingleOtpInput(String value, int index, BuildContext? context) {
+    if (context == null) return;
+
+    if (value.isNotEmpty) {
+      if (index < otpLength - 1) {
+        focusNodes[index + 1].requestFocus();
+      } else {
+        focusNodes[index].unfocus();
+      }
+    } else if (index > 0) {
+      focusNodes[index - 1].requestFocus();
+    }
   }
 
   Future<bool> verifyOtp() async {

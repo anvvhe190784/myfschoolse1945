@@ -313,7 +313,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           ),
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(2),
+            LengthLimitingTextInputFormatter(VerifyEmailController.otpLength),
           ],
           decoration: const InputDecoration(
             border: InputBorder.none,

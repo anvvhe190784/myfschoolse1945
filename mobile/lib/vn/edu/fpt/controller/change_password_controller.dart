@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/service/api_client.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/util/password_policy.dart';
 
 /// Controller for ChangePasswordScreen managing form state, validation, and API submission.
 class ChangePasswordController extends ChangeNotifier {
@@ -18,7 +19,15 @@ class ChangePasswordController extends ChangeNotifier {
   String? _successMessage;
 
   ChangePasswordController({ApiClient? apiClient})
-      : apiClient = apiClient ?? ApiClient.instance;
+      : apiClient = apiClient ?? ApiClient.instance {
+    oldPasswordController.addListener(_onTextChanged);
+    newPasswordController.addListener(_onTextChanged);
+    confirmPasswordController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    notifyListeners();
+  }
 
   bool get obscureOldPassword => _obscureOldPassword;
   bool get obscureNewPassword => _obscureNewPassword;
@@ -27,6 +36,24 @@ class ChangePasswordController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
+
+  bool get isOldPasswordEntered => oldPasswordController.text.trim().isNotEmpty;
+  bool get isNewPasswordValid =>
+      PasswordPolicy.isValid(newPasswordController.text);
+  bool get isSameAsOldPassword =>
+      oldPasswordController.text.isNotEmpty &&
+      newPasswordController.text.isNotEmpty &&
+      oldPasswordController.text == newPasswordController.text;
+  bool get isConfirmPasswordMatching =>
+      confirmPasswordController.text.isNotEmpty &&
+      confirmPasswordController.text == newPasswordController.text;
+
+  bool get canSubmit =>
+      isOldPasswordEntered &&
+      isNewPasswordValid &&
+      !isSameAsOldPassword &&
+      isConfirmPasswordMatching &&
+      !_isLoading;
 
   void toggleObscureOldPassword() {
     _obscureOldPassword = !_obscureOldPassword;
@@ -70,8 +97,14 @@ class ChangePasswordController extends ChangeNotifier {
       return false;
     }
 
-    if (newPassword.length < 6) {
-      _errorMessage = 'Mật khẩu mới phải từ 6 ký tự trở lên';
+    if (!PasswordPolicy.isValid(newPassword)) {
+      _errorMessage = 'Mật khẩu mới không thỏa mãn đầy đủ các điều kiện bảo mật.';
+      notifyListeners();
+      return false;
+    }
+
+    if (newPassword == oldPassword) {
+      _errorMessage = 'Mật khẩu mới không được trùng với mật khẩu hiện tại';
       notifyListeners();
       return false;
     }
@@ -84,12 +117,6 @@ class ChangePasswordController extends ChangeNotifier {
 
     if (newPassword != confirmPassword) {
       _errorMessage = 'Mật khẩu xác nhận không khớp';
-      notifyListeners();
-      return false;
-    }
-
-    if (newPassword == oldPassword) {
-      _errorMessage = 'Mật khẩu mới không được trùng với mật khẩu hiện tại';
       notifyListeners();
       return false;
     }
@@ -118,6 +145,9 @@ class ChangePasswordController extends ChangeNotifier {
 
   @override
   void dispose() {
+    oldPasswordController.removeListener(_onTextChanged);
+    newPasswordController.removeListener(_onTextChanged);
+    confirmPasswordController.removeListener(_onTextChanged);
     oldPasswordController.dispose();
     newPasswordController.dispose();
     confirmPasswordController.dispose();

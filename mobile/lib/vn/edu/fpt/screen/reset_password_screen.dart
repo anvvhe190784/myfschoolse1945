@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/reset_password_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/widget/bounce_tap.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/widget/password_criteria_checklist.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -55,22 +56,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   void _handleResetPassword() async {
-    final newPassword = _controller.newPasswordController.text;
-    final confirmPassword = _controller.confirmPasswordController.text;
-
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
 
-    if (newPassword.isEmpty || confirmPassword.isEmpty) {
+    final validationError = _controller.validate();
+    if (validationError != null) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Vui lòng điền cả 2 trường mật khẩu')),
-      );
-      return;
-    }
-
-    if (newPassword != confirmPassword) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Mật khẩu xác nhận không khớp')),
+        SnackBar(content: Text(validationError)),
       );
       return;
     }
@@ -213,7 +205,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                PasswordCriteriaChecklist(
+                  password: _controller.newPasswordController.text,
+                ),
+                const SizedBox(height: 18),
 
                 // Confirm Password Field
                 const Align(
@@ -259,6 +254,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                   ),
                 ),
+                if (_controller.confirmPasswordController.text.isNotEmpty &&
+                    _controller.confirmPasswordController.text !=
+                        _controller.newPasswordController.text) ...[
+                  const SizedBox(height: 6),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Mật khẩu xác nhận không trùng khớp',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFDC2626),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 36),
 
                 // Submit Button
@@ -267,11 +278,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _handleResetPassword,
+                      onPressed: _controller.canSubmit ? _handleResetPassword : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryYellow,
                         foregroundColor: textDark,
-                        elevation: 2,
+                        disabledBackgroundColor: const Color(0xFFE2E8F0),
+                        disabledForegroundColor: const Color(0xFF94A3B8),
+                        elevation: _controller.canSubmit ? 2 : 0,
                         shadowColor: primaryYellow.withValues(alpha: 0.4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),

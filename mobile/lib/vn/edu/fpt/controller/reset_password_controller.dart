@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/service/api_client.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/util/password_policy.dart';
 
 /// Controller for ResetPasswordScreen managing password change via Backend Web API `POST /api/v1/auth/reset-password`.
 class ResetPasswordController extends ChangeNotifier {
@@ -30,12 +31,29 @@ class ResetPasswordController extends ChangeNotifier {
         confirmPasswordController =
             confirmPasswordController ?? TextEditingController(),
         _ownsControllers = newPasswordController == null &&
-            confirmPasswordController == null;
+            confirmPasswordController == null {
+    this.newPasswordController.addListener(_onTextChanged);
+    this.confirmPasswordController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    notifyListeners();
+  }
 
   bool get obscureNewPassword => _obscureNewPassword;
   bool get obscureConfirmPassword => _obscureConfirmPassword;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  bool get isNewPasswordValid =>
+      PasswordPolicy.isValid(newPasswordController.text);
+
+  bool get isConfirmPasswordMatching =>
+      confirmPasswordController.text.isNotEmpty &&
+      confirmPasswordController.text == newPasswordController.text;
+
+  bool get canSubmit =>
+      isNewPasswordValid && isConfirmPasswordMatching && !_isLoading;
 
   void toggleObscureNewPassword() {
     _obscureNewPassword = !_obscureNewPassword;
@@ -53,6 +71,9 @@ class ResetPasswordController extends ChangeNotifier {
 
     if (newPass.isEmpty || confirmPass.isEmpty) {
       return 'Vui lòng điền cả 2 trường mật khẩu';
+    }
+    if (!PasswordPolicy.isValid(newPass)) {
+      return 'Mật khẩu mới không thỏa mãn đầy đủ các điều kiện bảo mật.';
     }
     if (newPass != confirmPass) {
       return 'Mật khẩu xác nhận không khớp';
@@ -99,6 +120,8 @@ class ResetPasswordController extends ChangeNotifier {
 
   @override
   void dispose() {
+    newPasswordController.removeListener(_onTextChanged);
+    confirmPasswordController.removeListener(_onTextChanged);
     if (_ownsControllers) {
       newPasswordController.dispose();
       confirmPasswordController.dispose();

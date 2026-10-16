@@ -28,19 +28,19 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 
     // Excel & CSV Bulk Import (Apache POI)
-    implementation 'org.apache.poi:poi-ooxml:5.4.1'
+    implementation 'org.apache.poi:poi-ooxml:5.5.1'
 
     // JWT (io.jsonwebtoken)
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
     // Resilience4j
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
 
     // MapStruct & Lombok
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
+    compileOnly 'org.projectlombok:lombok:1.18.48'
+    annotationProcessor 'org.projectlombok:lombok:1.18.48'
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
     implementation 'org.mapstruct:mapstruct:1.6.3'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'

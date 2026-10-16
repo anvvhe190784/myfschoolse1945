@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/controller/verify_email_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/forgot_password_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/login_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/reset_password_screen.dart';
@@ -160,6 +162,14 @@ void main() {
       expect(find.text('Xác nhận mật khẩu'), findsOneWidget);
       expect(find.byType(TextField), findsNWidgets(2));
 
+      // Verify Checklist items
+      expect(find.text('Điều kiện mật khẩu:'), findsOneWidget);
+      expect(find.text('Độ dài từ 8 - 12 ký tự'), findsOneWidget);
+      expect(find.text('Ít nhất 1 chữ cái in hoa (A-Z)'), findsOneWidget);
+      expect(find.text('Ít nhất 1 chữ cái in thường (a-z)'), findsOneWidget);
+      expect(find.text('Ít nhất 1 chữ số (0-9)'), findsOneWidget);
+      expect(find.text('Ít nhất 1 ký tự đặc biệt (!@#\$...)'), findsOneWidget);
+
       // Test visibility toggles
       final visibilityIcons = find.byIcon(Icons.visibility);
       expect(visibilityIcons, findsNWidgets(2));
@@ -168,22 +178,57 @@ void main() {
       await tester.pump();
       expect(find.byIcon(Icons.visibility_off), findsOneWidget);
 
-      // Tap submit with empty fields -> snackbar
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Đặt lại mật khẩu'));
-      await tester.pump();
-      expect(find.text('Vui lòng điền cả 2 trường mật khẩu'), findsOneWidget);
+      // Initial state: 5 neutral gray checklist items
+      expect(find.byIcon(Icons.radio_button_unchecked), findsNWidgets(5));
+      expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
+      expect(find.byIcon(Icons.cancel_outlined), findsNothing);
 
-      // Enter mismatched passwords
+      // Submit button is disabled initially
+      var submitBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Đặt lại mật khẩu'),
+      );
+      expect(submitBtn.onPressed, isNull);
+
+      // Enter weak new password -> 3 met (length 11, lowercase, digits), 2 unmet in red (uppercase, special char)
       final textFields = find.byType(TextField);
       await tester.enterText(textFields.at(0), 'password123');
-      await tester.enterText(textFields.at(1), 'password999');
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Đặt lại mật khẩu'));
       await tester.pump();
-      expect(find.text('Mật khẩu xác nhận không khớp'), findsOneWidget);
+      expect(find.byIcon(Icons.cancel_outlined), findsNWidgets(2));
+      submitBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Đặt lại mật khẩu'),
+      );
+      expect(submitBtn.onPressed, isNull);
 
-      // Enter matching passwords
-      await tester.enterText(textFields.at(1), 'password123');
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Đặt lại mật khẩu'));
+      // Enter valid new password (Pass@1234)
+      await tester.enterText(textFields.at(0), 'Pass@1234');
+      await tester.pump();
+
+      // All 5 checklist items satisfied (green checkmarks)
+      expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(5));
+      expect(find.byIcon(Icons.cancel_outlined), findsNothing);
+
+      // Enter mismatched confirm password -> warning text appears, button still disabled
+      await tester.enterText(textFields.at(1), 'Pass@9999');
+      await tester.pump();
+      expect(find.text('Mật khẩu xác nhận không trùng khớp'), findsOneWidget);
+      submitBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Đặt lại mật khẩu'),
+      );
+      expect(submitBtn.onPressed, isNull);
+
+      // Enter matching confirm password -> warning disappears, button unlocked!
+      await tester.enterText(textFields.at(1), 'Pass@1234');
+      await tester.pump();
+      expect(find.text('Mật khẩu xác nhận không trùng khớp'), findsNothing);
+      submitBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Đặt lại mật khẩu'),
+      );
+      expect(submitBtn.onPressed, isNotNull);
+
+      // Tap submit button -> success dialog
+      final submitFinder = find.widgetWithText(ElevatedButton, 'Đặt lại mật khẩu');
+      await tester.ensureVisible(submitFinder);
+      await tester.tap(submitFinder);
       await tester.pumpAndSettle();
 
       // Dialog appears
@@ -194,6 +239,126 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Đăng nhập ngay'), findsOneWidget);
+    });
+
+    test('VerifyEmailController onKeyEvent clears previous box on backspace when current is empty', () {
+      final controller = VerifyEmailController(email: 'test@fpt.edu.vn');
+      controller.controllers[0].text = '7';
+      controller.controllers[1].text = '';
+
+      final result = controller.focusNodes[1].onKeyEvent!(
+        controller.focusNodes[1],
+        const KeyDownEvent(
+          physicalKey: PhysicalKeyboardKey.backspace,
+          logicalKey: LogicalKeyboardKey.backspace,
+          timeStamp: Duration.zero,
+        ),
+      );
+
+      expect(result, KeyEventResult.handled);
+      expect(controller.controllers[0].text, '');
+      controller.dispose();
+    });
+
+    testWidgets('VerifyEmailScreen supports rapid backspace deletion across OTP boxes',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: VerifyEmailScreen(email: 'user@fpt.edu.vn'),
+        ),
+      );
+
+      final textFields = find.byType(TextField);
+      await tester.enterText(textFields.at(0), '1');
+      await tester.enterText(textFields.at(1), '2');
+      await tester.enterText(textFields.at(2), '3');
+      await tester.pump();
+
+      expect(tester.widget<TextField>(textFields.at(0)).controller?.text, '1');
+      expect(tester.widget<TextField>(textFields.at(1)).controller?.text, '2');
+      expect(tester.widget<TextField>(textFields.at(2)).controller?.text, '3');
+
+      // Clear 3rd box via text edit -> navigates focus back to 2nd box
+      await tester.enterText(textFields.at(2), '');
+      await tester.pump();
+      expect(tester.widget<TextField>(textFields.at(2)).controller?.text, '');
+
+      // Clear 2nd box -> navigates focus back to 1st box
+      await tester.enterText(textFields.at(1), '');
+      await tester.pump();
+      expect(tester.widget<TextField>(textFields.at(1)).controller?.text, '');
+    });
+
+    testWidgets('Entering a digit when previous box is focused routes digit to next empty box',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: VerifyEmailScreen(email: 'user@fpt.edu.vn'),
+        ),
+      );
+
+      final textFields = find.byType(TextField);
+      // Enter 1 in box 0, 2 in box 1, 6 in box 2, 8 in box 3
+      await tester.enterText(textFields.at(0), '1');
+      await tester.enterText(textFields.at(1), '2');
+      await tester.enterText(textFields.at(2), '6');
+      await tester.enterText(textFields.at(3), '8');
+      await tester.pump();
+
+      expect(tester.widget<TextField>(textFields.at(0)).controller?.text, '1');
+      expect(tester.widget<TextField>(textFields.at(1)).controller?.text, '2');
+      expect(tester.widget<TextField>(textFields.at(2)).controller?.text, '6');
+      expect(tester.widget<TextField>(textFields.at(3)).controller?.text, '8');
+
+      // Delete 8 in box 3 -> box 3 becomes empty, focus returns to box 2
+      await tester.enterText(textFields.at(3), '');
+      await tester.pump();
+      expect(tester.widget<TextField>(textFields.at(3)).controller?.text, '');
+
+      // User enters '9' while box 2 is focused (TextField 2 receives '69')
+      await tester.enterText(textFields.at(2), '69');
+      await tester.pump();
+
+      // Box 0 and 1 must remain untouched ('1' and '2')
+      expect(tester.widget<TextField>(textFields.at(0)).controller?.text, '1');
+      expect(tester.widget<TextField>(textFields.at(1)).controller?.text, '2');
+      // Box 2 must remain '6' and box 3 must receive '9'
+      expect(tester.widget<TextField>(textFields.at(2)).controller?.text, '6');
+      expect(tester.widget<TextField>(textFields.at(3)).controller?.text, '9');
+    });
+
+    testWidgets('Deleting 6th digit and typing new digit fills 6th box and moves focus to 6th box',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: VerifyEmailScreen(email: 'user@fpt.edu.vn'),
+        ),
+      );
+
+      final textFields = find.byType(TextField);
+      // Fill all 6 boxes
+      for (int i = 0; i < 6; i++) {
+        await tester.enterText(textFields.at(i), '${i + 1}');
+      }
+      await tester.pump();
+
+      // Delete 6th digit (box 5) -> box 5 becomes empty, focus returns to box 4
+      await tester.enterText(textFields.at(5), '');
+      await tester.pump();
+      expect(tester.widget<TextField>(textFields.at(5)).controller?.text, '');
+      expect(tester.widget<TextField>(textFields.at(4)).focusNode?.hasFocus, isTrue);
+
+      // User enters '9' while box 4 is focused (TextField 4 receives '59')
+      await tester.enterText(textFields.at(4), '59');
+      await tester.pump();
+
+      // Box 4 keeps '5', Box 5 gets '9'
+      expect(tester.widget<TextField>(textFields.at(4)).controller?.text, '5');
+      expect(tester.widget<TextField>(textFields.at(5)).controller?.text, '9');
+
+      // Crucial: Focus MUST move to box 5, NOT remain on box 4
+      expect(tester.widget<TextField>(textFields.at(5)).focusNode?.hasFocus, isTrue);
+      expect(tester.widget<TextField>(textFields.at(4)).focusNode?.hasFocus, isFalse);
     });
   });
 }

@@ -65,14 +65,29 @@ public class SecurityConfig {
           .authorizeHttpRequests(
               auth ->
                   auth
-                      // Public endpoints
+                      .dispatcherTypeMatchers(
+                          jakarta.servlet.DispatcherType.FORWARD,
+                          jakarta.servlet.DispatcherType.ERROR)
+                      .permitAll()
+                      // Public endpoints and static web assets
                       .requestMatchers(
                           "/api/v1/auth/login",
                           "/api/v1/auth/refresh-token",
                           "/api/v1/auth/logout",
                           "/api/v1/auth/forgot-password",
                           "/api/v1/auth/verify-otp",
-                          "/api/v1/auth/reset-password")
+                          "/api/v1/auth/reset-password",
+                          "/admin",
+                          "/admin/",
+                          "/admin/**",
+                          "/",
+                          "/index.html",
+                          "/favicon.ico",
+                          "/**/*.css",
+                          "/**/*.js",
+                          "/**/*.png",
+                          "/**/*.svg",
+                          "/**/*.ico")
                       .permitAll()
                       // Admin restricted endpoints
                       .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/news")

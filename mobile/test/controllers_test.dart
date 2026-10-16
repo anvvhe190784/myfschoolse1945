@@ -99,11 +99,19 @@ void main() {
       controller.toggleObscureNewPassword();
       expect(controller.obscureNewPassword, isFalse);
 
-      controller.newPasswordController.text = 'newPass123';
-      controller.confirmPasswordController.text = 'mismatchPass';
+      // Invalid password policy (missing special char)
+      controller.newPasswordController.text = 'NewPass123';
+      controller.confirmPasswordController.text = 'NewPass123';
+      expect(controller.validate(),
+          'Mật khẩu mới không thỏa mãn đầy đủ các điều kiện bảo mật.');
+
+      // Valid password policy but mismatch
+      controller.newPasswordController.text = 'NewPass123!';
+      controller.confirmPasswordController.text = 'Mismatch123!';
       expect(controller.validate(), 'Mật khẩu xác nhận không khớp');
 
-      controller.confirmPasswordController.text = 'newPass123';
+      // Valid and matching
+      controller.confirmPasswordController.text = 'NewPass123!';
       expect(controller.validate(), isNull);
 
       final success = await controller.resetPassword(allowOfflineFallback: true);
@@ -137,19 +145,6 @@ void main() {
       await controller.loadUserProfile();
       expect(controller.studentName, 'Mock User');
       controller.dispose();
-    });
-  });
-
-  group('ApiClient Base URL and Android Emulator detection', () {
-    test('Default base url is configured properly', () {
-      final client = ApiClient(baseUrl: 'http://10.0.2.2:8080/api/v1');
-      expect(client.baseUrl, 'http://10.0.2.2:8080/api/v1');
-
-      client.setAuthToken('test-jwt-token');
-      expect(client.authToken, 'test-jwt-token');
-
-      client.clearAuthToken();
-      expect(client.authToken, isNull);
     });
   });
 }

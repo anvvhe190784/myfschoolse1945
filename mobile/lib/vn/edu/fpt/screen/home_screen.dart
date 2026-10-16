@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: 'Tin nhắn',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.notifications_none_rounded),
+                icon: Icon(Icons.local_activity_outlined),
                 label: 'Hoạt động',
               ),
               BottomNavigationBarItem(
@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         return _buildPlaceholderTab(
           title: 'Hoạt động',
-          icon: Icons.notifications_none_rounded,
+          icon: Icons.local_activity_outlined,
           description: 'Lịch sử điểm danh và sự kiện ngoại khóa',
         );
       case 3:

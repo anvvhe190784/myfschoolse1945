@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/login_controller.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/screen/home_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/login_screen.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/service/api_client.dart';
 import 'mock_api_client.dart';
 
 void main() {
@@ -75,5 +77,29 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.text('Tài khoản hoặc mật khẩu không chính xác'), findsOneWidget);
     expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  testWidgets('LoginScreen sign in navigates to HomeScreen on valid credentials', (WidgetTester tester) async {
+    ApiClient.instance = MockApiClient();
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: LoginScreen(),
+      ),
+    );
+
+    // Enter valid credentials
+    await tester.enterText(find.byType(TextField).at(0), 'student@fpt.edu.vn');
+    await tester.enterText(find.byType(TextField).at(1), '123456');
+
+    final signInBtn = find.widgetWithText(ElevatedButton, 'Đăng nhập');
+    expect(signInBtn, findsOneWidget);
+
+    await tester.tap(signInBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HomeScreen), findsOneWidget);
+
+    ApiClient.instance = null;
   });
 }

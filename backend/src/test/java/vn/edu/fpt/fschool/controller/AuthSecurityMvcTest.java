@@ -119,4 +119,12 @@ class AuthSecurityMvcTest {
         .perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + outdatedToken))
         .andExpect(status().isForbidden());
   }
+
+  @Test
+  @DisplayName("Bảo mật: /admin, /admin/ và /admin/index.html là public web page (không bị chặn 403)")
+  void adminPortal_shouldBeAccessibleWithoutAuth() throws Exception {
+    mockMvc.perform(get("/admin")).andExpect(status().isOk());
+    mockMvc.perform(get("/admin/")).andExpect(status().isOk());
+    mockMvc.perform(get("/admin/index.html")).andExpect(status().isOk());
+  }
 }

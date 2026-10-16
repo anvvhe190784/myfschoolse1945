@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPT Schools - Cổng Quản Trị Hệ Thống (Admin Portal)</title>
+    <link rel="stylesheet" href="/admin/style.css">
+    <link rel="icon" type="image/png" href="/admin/fpt_logo.png">
+</head>
+<body>
+
+<!-- Toast Notification Stack -->
+<div id="toast-container"></div>
+
+<!-- Login Overlay -->
+<div id="login-overlay">
+    <div class="login-card">
+        <img src="/admin/fpt_logo.png" alt="FPT Logo">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 6px;">Quản Trị Hệ Thống</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Đăng nhập tài khoản Quản trị viên
+            (ADMIN)</p>
+
+        <form id="login-form">
+            <div class="form-group" style="text-align: left;">
+                <label class="form-label" for="login-email">Email Quản trị</label>
+                <input type="email" id="login-email" class="form-control" placeholder="example@fpt.edu.vn" required>
+            </div>
+            <div class="form-group" style="text-align: left;">
+                <label class="form-label" for="login-password">Mật khẩu</label>
+                <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary"
+                    style="width: 100%; justify-content: center; padding: 10px; margin-top: 8px;">
+                Đăng Nhập Quản Trị
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Main Application Layout -->
+<div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="/admin/fpt_logo.png" alt="Logo">
+            <div>
+                <h2>FPT SCHOOLS</h2>
+                <span>Admin Workspace</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a class="nav-item active" data-tab="dashboard">
+                <span class="icon">📊</span>
+                <span>Tổng quan</span>
+            </a>
+            <a class="nav-item" data-tab="users">
+                <span class="icon">👥</span>
+                <span>Quản lý Người dùng</span>
+            </a>
+            <a class="nav-item" data-tab="courses">
+                <span class="icon">📚</span>
+                <span>Khóa học & Môn học</span>
+            </a>
+            <a class="nav-item" data-tab="classes">
+                <span class="icon">🏫</span>
+                <span>Quản lý Lớp học</span>
+            </a>
+            <a class="nav-item" data-tab="schedules">
+                <span class="icon">📅</span>
+                <span>Xếp Lịch học / Thi</span>
+            </a>
+            <a class="nav-item" data-tab="requests">
+                <span class="icon">📝</span>
+                <span>Xử lý Đơn từ</span>
+            </a>
+            <a class="nav-item" data-tab="import">
+                <span class="icon">📥</span>
+                <span>Nhập dữ liệu CSV</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="current-user-avatar">A</div>
+                <div class="user-details">
+                    <div class="user-name" id="current-user-name">Quản Trị Viên</div>
+                    <div class="user-role" id="current-user-role">ADMINISTRATOR</div>
+                </div>
+            </div>
+            <button id="btn-logout" class="btn btn-secondary btn-sm" title="Đăng xuất">Thoát</button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+        <header class="top-header">
+            <h1 id="page-title">Tổng quan hệ thống</h1>
+            <div class="top-header-actions">
+                <span style="font-size: 13px; color: var(--text-muted);">Phiên bản: 1.0.0-GA</span>
+            </div>
+        </header>
+
+        <section class="content-body">
+
+            <!-- Tab 1: Dashboard -->
+            <div id="tab-dashboard" class="tab-pane active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon orange">👥</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-users-count">--</div>
+                            <div class="stat-label">Tổng người dùng</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📚</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-courses-count">--</div>
+                            <div class="stat-label">Khóa học active</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">🏫</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-classes-count">--</div>
+                            <div class="stat-label">Lớp học mở</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">📝</div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="stat-requests-count">--</div>
+                            <div class="stat-label">Đơn từ xử lý</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Hướng dẫn thao tác nhanh (Admin Workflows)</span>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-muted); margin-bottom: 16px;">
+                            Chào mừng bạn đến với Cổng quản trị FPT Schools. Bạn có thể thực hiện đầy đủ các chức năng
+                            quản lý học sinh, phân lớp, thời khóa biểu, duyệt đơn và nạp dữ liệu hàng loạt.
+                        </p>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="switchTab('users')">+ Tạo người dùng mới</button>
+                            <button class="btn btn-secondary" onclick="switchTab('classes')">+ Mở lớp học mới</button>
+                            <button class="btn btn-secondary" onclick="switchTab('schedules')">+ Xếp lịch học/thi
+                            </button>
+                            <button class="btn btn-secondary" onclick="switchTab('import')">📥 Tải template & Import
+                                CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Quản lý Người dùng (Users: UC-ADM-01, 02, 03) -->
+            <div id="tab-users" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Danh sách Người dùng (Tài khoản)</span>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-user')">+ Thêm Người
+                            Dùng
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="toolbar">
+                            <input type="text" id="user-search-input" class="search-input"
+                                   placeholder="Tìm theo Tên, Email, Mã HS..."
+                                   aria-label="Tìm theo Tên, Email, Mã HS">
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-secondary btn-sm" id="btn-refresh-users">Làm mới</button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Họ và Tên</th>
+                                    <th>Email</th>
+                                    <th>Vai trò</th>
+                                    <th>Mã Định Danh</th>
+                                    <th>SĐT</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted);">Đang tải dữ
+                                        liệu người dùng...
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Khóa học & Môn học (Courses: UC-ADM-04) -->
+            <div id="tab-courses" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Danh mục Khóa học & Môn học</span>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-course')">+ Thêm Khóa
+                            Học
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Mã Khóa / Môn</th>
+                                    <th>Tên Môn Học</th>
+                                    <th>Số Tín Chỉ</th>
+                                    <th>Mô Tả</th>
+                                </tr>
+                                </thead>
+                                <tbody id="courses-table-body">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải danh
+                                        sách khóa học...
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Quản lý Lớp học (Classes: UC-ADM-05) -->
+            <div id="tab-classes" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Danh sách Lớp học</span>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-class')">+ Tạo Lớp Học
+                            Mới
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Mã Lớp</th>
+                                    <th>Tên Môn Học</th>
+                                    <th>Giáo Viên Phụ Trách</th>
+                                    <th>Học Kỳ</th>
+                                </tr>
+                                </thead>
+                                <tbody id="classes-table-body">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải danh
+                                        sách lớp học...
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 5: Xếp Lịch học / Lịch thi (Schedules: UC-ADM-06) -->
+            <div id="tab-schedules" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Xếp Lịch Học & Lịch Thi</span>
+                        <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-schedule')">+ Thêm Lịch
+                            Học Mới
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-muted); margin-bottom: 16px;">
+                            Thực hiện xếp thời khóa biểu cho lớp học theo ngày, ca học (Slot), phòng học hoặc hình thức
+                            học trực tuyến.
+                        </p>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>Mã Lớp</th>
+                                    <th>Ngày Học</th>
+                                    <th>Ca Học (Slot)</th>
+                                    <th>Phòng Học</th>
+                                    <th>Loại Lịch</th>
+                                </tr>
+                                </thead>
+                                <tbody id="schedules-preview-body">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Chọn "Thêm
+                                        Lịch Học Mới" để lên lịch giảng dạy cho lớp.
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 6: Xử lý Đơn từ (Requests: UC-ADM-07) -->
+            <div id="tab-requests" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Hàng đợi Đơn từ & Yêu cầu của Học sinh</span>
+                        <button class="btn btn-secondary btn-sm" id="btn-refresh-requests">Làm mới danh sách</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>Mã Đơn</th>
+                                    <th>Mã HS / Người gửi</th>
+                                    <th>Loại Đơn</th>
+                                    <th>Lý Do / Nội Dung</th>
+                                    <th>Ngày Gửi</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Thao Tác Duyệt</th>
+                                </tr>
+                                </thead>
+                                <tbody id="requests-table-body">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; color: var(--text-muted);">Đang tải danh
+                                        sách đơn từ...
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 7: Nhập dữ liệu CSV (Bulk Import: UC-ADM-08 -> 12) -->
+            <div id="tab-import" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">1. Tải File Mẫu CSV Chuẩn (Templates)</span>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-muted); margin-bottom: 14px;">Tải về cấu trúc cột CSV hợp lệ trước
+                            khi điền dữ liệu:</p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-secondary" onclick="downloadTemplate('users')">📄 Mẫu Người dùng
+                                (users.csv)
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadTemplate('grades')">📄 Mẫu Điểm số
+                                (grades.csv)
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadTemplate('schedules')">📄 Mẫu Lịch học
+                                (schedules.csv)
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadTemplate('enrollments')">📄 Mẫu Gán lớp
+                                (enrollments.csv)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">2. Tải Lên & Xử Lý File CSV Hàng Loạt</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group" style="max-width: 320px;">
+                            <label class="form-label" for="import-type-select">Chọn phân hệ nạp dữ liệu:</label>
+                            <select id="import-type-select" class="form-control">
+                                <option value="users">Người dùng (Users)</option>
+                                <option value="grades">Điểm số (Grades)</option>
+                                <option value="schedules">Lịch học / Lịch thi (Schedules)</option>
+                                <option value="enrollments">Gán học sinh vào lớp (Enrollments)</option>
+                            </select>
+                        </div>
+
+                        <div id="drop-zone" class="upload-zone">
+                            <div class="upload-icon">📁</div>
+                            <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">Kéo thả file CSV vào đây
+                                hoặc bấm để chọn file
+                            </div>
+                            <div style="color: var(--text-muted); font-size: 12px;">Chỉ hỗ trợ định dạng .csv chuẩn
+                                UTF-8
+                            </div>
+                            <input type="file" id="csv-file-input" accept=".csv" style="display: none;" aria-label="Chọn tệp tin CSV nạp dữ liệu">
+                        </div>
+
+                        <!-- Import Results -->
+                        <div id="import-result-container" style="display: none; margin-top: 24px;">
+                            <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">Kết Quả Nạp Dữ Liệu</h3>
+                            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 16px;">
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <div class="stat-value" id="res-total">0</div>
+                                        <div class="stat-label">Tổng số dòng</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <div class="stat-value" id="res-success" style="color: var(--success);">0</div>
+                                        <div class="stat-label">Nạp thành công</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-info">
+                                        <div class="stat-value" id="res-failed" style="color: var(--danger);">0</div>
+                                        <div class="stat-label">Bản ghi thất bại</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="res-errors-box"
+                                 style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 14px;">
+                                <div style="color: #991b1b; font-weight: 700; margin-bottom: 6px;">Chi tiết lỗi phát
+                                    sinh:
+                                </div>
+                                <ul id="res-errors-list"
+                                    style="margin-left: 20px; font-size: 12px; color: #b91c1c;"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+</div>
+
+<!-- Modal: Create User -->
+<div id="modal-create-user" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="card-title">Tạo Tài Khoản Người Dùng Mới</h3>
+            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-user')">✕</button>
+        </div>
+        <form id="form-create-user">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="user-fullname">Họ và Tên *</label>
+                    <input type="text" id="user-fullname" class="form-control" required placeholder="Nguyễn Văn An">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="user-email">Email *</label>
+                    <input type="email" id="user-email" class="form-control" required placeholder="an@fpt.edu.vn">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="user-password">Mật Khẩu Khởi Tạo *</label>
+                    <input type="password" id="user-password" class="form-control" required
+                           placeholder="Tối thiểu 6 ký tự">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="user-role">Vai Trò (Role) *</label>
+                    <select id="user-role" class="form-control" required>
+                        <option value="STUDENT">Học sinh (STUDENT)</option>
+                        <option value="LECTURER">Giáo viên / Giảng viên (LECTURER)</option>
+                        <option value="PARENT">Phụ huynh (PARENT)</option>
+                        <option value="ADMIN">Quản trị viên (ADMIN)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="user-phone">Số Điện Thoại</label>
+                    <input type="tel" id="user-phone" class="form-control" placeholder="0912345678">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="user-rollnumber">Mã Học Sinh / Roll Number</label>
+                    <input type="text" id="user-rollnumber" class="form-control"
+                           placeholder="HE194500 (chỉ cho học sinh)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-user')">Hủy</button>
+                <button type="submit" class="btn btn-primary">Xác Nhận Tạo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Create Course -->
+<div id="modal-create-course" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="card-title">Thêm Khóa Học / Môn Học Mới</h3>
+            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-course')">✕</button>
+        </div>
+        <form id="form-create-course">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="course-code">Mã Khóa / Môn Học *</label>
+                    <input type="text" id="course-code" class="form-control" required placeholder="PRJ301, PRO192...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="course-name">Tên Môn Học *</label>
+                    <input type="text" id="course-name" class="form-control" required placeholder="Lập trình Java Web">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="course-credits">Số Tín Chỉ *</label>
+                    <input type="number" id="course-credits" class="form-control" min="1" max="10" value="3" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="course-desc">Mô Tả Môn Học</label>
+                    <textarea id="course-desc" class="form-control" rows="3"
+                              placeholder="Môn học bắt buộc chuyên ngành..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-course')">Hủy</button>
+                <button type="submit" class="btn btn-primary">Lưu Khóa Học</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Create Class -->
+<div id="modal-create-class" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="card-title">Mở Lớp Học Mới</h3>
+            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-class')">✕</button>
+        </div>
+        <form id="form-create-class">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="class-code">Mã Lớp Học *</label>
+                    <input type="text" id="class-code" class="form-control" required placeholder="SE1945, IA1801...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="class-course-id">Chọn Môn Học *</label>
+                    <select id="class-course-id" class="form-control" required>
+                        <option value="">-- Chọn khóa học --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="class-teacher-id">ID Giáo Viên Phụ Trách *</label>
+                    <input type="number" id="class-teacher-id" class="form-control" required
+                           placeholder="Nhập ID giảng viên">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="class-semester">Học Kỳ *</label>
+                    <input type="text" id="class-semester" class="form-control" required value="Fall 2026">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-class')">Hủy</button>
+                <button type="submit" class="btn btn-primary">Tạo Lớp</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Create Schedule -->
+<div id="modal-create-schedule" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="card-title">Lên Lịch Học / Lịch Thi Cho Lớp</h3>
+            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-schedule')">✕</button>
+        </div>
+        <form id="form-create-schedule">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="sched-class-code">Mã Lớp Học *</label>
+                    <input type="text" id="sched-class-code" class="form-control" required placeholder="SE1945">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="sched-date">Ngày Học (YYYY-MM-DD) *</label>
+                    <input type="date" id="sched-date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="sched-slot">Ca Học (Slot 1 - 6) *</label>
+                    <select id="sched-slot" class="form-control" required>
+                        <option value="1">Slot 1 (07:30 - 09:50)</option>
+                        <option value="2">Slot 2 (10:00 - 12:20)</option>
+                        <option value="3">Slot 3 (12:50 - 15:10)</option>
+                        <option value="4">Slot 4 (15:20 - 17:40)</option>
+                        <option value="5">Slot 5 (18:00 - 20:20)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="sched-room">Phòng Học / Địa Điểm *</label>
+                    <input type="text" id="sched-room" class="form-control" required
+                           placeholder="BE-302 hoặc Google Meet">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-schedule')">Hủy
+                </button>
+                <button type="submit" class="btn btn-primary">Lưu Lịch Học</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Process Request -->
+<div id="modal-process-request" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="card-title">Phê Duyệt / Xử Lý Đơn Từ</h3>
+            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-process-request')">✕</button>
+        </div>
+        <form id="form-process-request">
+            <div class="modal-body">
+                <input type="hidden" id="process-req-id" aria-hidden="true">
+                <div class="form-group">
+                    <label class="form-label" for="process-status">Quyết Định Phê Duyệt *</label>
+                    <select id="process-status" class="form-control" required>
+                        <option value="APPROVED">CHẤP THUẬN (APPROVED)</option>
+                        <option value="REJECTED">TỪ CHỐI (REJECTED)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="process-note">Ghi Chú Phản Hồi (Note)</label>
+                    <textarea id="process-note" class="form-control" rows="3"
+                              placeholder="Lý do chấp thuận hoặc từ chối đơn..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-process-request')">Hủy
+                </button>
+                <button type="submit" class="btn btn-primary">Cập Nhật Trạng Thái</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Template definitions for dynamic UI components (Toast, Badges, Dragover) -->
+<template id="admin-ui-templates">
+    <div class="toast toast-success toast-error show dragover btn-success btn-danger badge-active badge-inactive badge-pending badge-approved badge-rejected badge-role"></div>
+</template>
+
+<script src="/admin/app.js"></script>
+</body>
+</html>

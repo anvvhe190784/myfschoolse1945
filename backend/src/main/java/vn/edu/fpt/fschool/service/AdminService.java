@@ -243,4 +243,9 @@ public class AdminService {
               dto.responseNote()));
     }
   }
+
+  @Transactional(readOnly = true)
+  public List<vn.edu.fpt.fschool.dto.RequestDtos.RequestResponse> getAllRequests() {
+    return academicMapper.toRequestResponseList(requestRepository.findAll());
+  }
 }

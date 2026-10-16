@@ -38,3 +38,19 @@ When interacting with the `sonarqube` MCP server, the Agent **MUST** strictly ad
 
 ### 7.5. Secret Protection & Token Hygiene
 - **Zero Token Leakage:** The SonarCloud token (`SONARQUBE_TOKEN`) **MUST NEVER** be printed in chat, logged to console, written into committed source files, or exposed in shell outputs. Always inject credentials via environment variables or Windows Credential Manager.
+
+### 7.6. Zero-Baseline Sonar Scaffolding & Dynamic Source Discovery Protocol
+- **Cold-Start Manifest Detection:** When onboarding or working with a repository where `sonar-project.properties` is missing or unconfigured, the Agent **MUST** inspect project manifests (`pom.xml`, `build.gradle*`, `package.json`, `pubspec.yaml`, `Cargo.toml`, etc.) during Phase 1 Discovery to determine active modules and source structures.
+- **Module Root Scoping (Solution 1 Standard):** Never configure overly restrictive language-specific subdirectories (such as `src/main/java`) in `sonar.sources`. Always configure the module source root:
+  - **Java / Spring Boot:** `sonar.sources=<module>/src/main`, `sonar.tests=<module>/src/test` (guarantees automatic analysis of static assets, templates, SQL, JS, CSS, and HTML alongside Java/Kotlin).
+  - **Flutter / Dart:** `sonar.sources=<module>/lib`, `sonar.tests=<module>/test`.
+  - **Node.js / Frontend (React, Vue, Vite):** `sonar.sources=<module>/src` (or root `src`).
+- **Standard Baseline Exclusions:** Every generated or updated `sonar-project.properties` MUST declare comprehensive exclusions to prevent build artifacts, package dependencies, and generated boilerplate from polluting analysis:
+  `sonar.exclusions=**/build/**,**/.gradle/**,**/.dart_tool/**,**/node_modules/**,**/*.g.dart,**/*.freezed.dart,**/dist/**,**/out/**`
+- **Existing Config Audit:** If `sonar-project.properties` already exists with narrow paths (e.g., ending in `/java`), the Agent must proactively upgrade them to module roots (`/src/main`) to maintain full multi-language coverage across the repository.
+
+### 7.7. Connected Mode & Pre-Scan SCM Blame Guardrail
+- **Connected Mode Standard:** Every repository analyzed by SonarQube/SonarCloud must maintain `.sonarlint/connectedMode.json` at the root directory containing `sonarCloudOrganization` and `projectKey` to ensure SonarQube for IDE (SonarLint) synchronizes 100% with the cloud project's Quality Profile and issue lifecycle.
+- **Pre-Scan SCM Intent Tracking (`git add -N`):** Prior to executing the Sonar scanner script, the Agent **MUST** register all newly created files/directories into Git index via `git add -N .` (or specific paths). This prevents SonarScanner from raising `Missing blame information` warnings and ensures accurate line-level issue attribution on SonarCloud.
+
+

@@ -3,9 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/home_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/account_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/home_screen.dart';
-import 'package:myfschoolse1945/vn/edu/fpt/screen/login_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/notification_screen.dart';
-import 'package:myfschoolse1945/vn/edu/fpt/service/api_client.dart';
 import 'mock_api_client.dart';
 
 
@@ -30,7 +28,7 @@ void main() {
       expect(imageFinder, findsOneWidget);
 
       // Verify notification bell and search icons
-      expect(find.byIcon(Icons.notifications_none_rounded), findsWidgets);
+      expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
@@ -135,14 +133,28 @@ void main() {
       expect(find.text('Tin nhắn'), findsOneWidget);
       expect(find.text('Hoạt động'), findsOneWidget);
       expect(find.text('Tài khoản'), findsOneWidget);
+      expect(find.byIcon(Icons.local_activity_outlined), findsOneWidget);
 
       // Tap 'Tin nhắn' tab
       await tester.tap(find.text('Tin nhắn'));
       await tester.pump();
 
-      final bottomNavBar =
+      BottomNavigationBar bottomNavBar =
           tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
       expect(bottomNavBar.currentIndex, 1);
+
+      // Tap 'Hoạt động' tab
+      await tester.tap(find.text('Hoạt động'));
+      await tester.pump();
+
+      bottomNavBar =
+          tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
+      expect(bottomNavBar.currentIndex, 2);
+      expect(
+        find.text('Lịch sử điểm danh và sự kiện ngoại khóa'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.local_activity_outlined), findsNWidgets(2));
     });
 
     testWidgets('Tapping Tài khoản tab displays AccountScreen',
@@ -160,32 +172,6 @@ void main() {
       expect(find.byType(AccountScreen), findsOneWidget);
       expect(find.text('Vũ Văn An'), findsOneWidget);
       expect(find.text('Mã học sinh: HS194500'), findsOneWidget);
-    });
-
-
-    testWidgets('LoginScreen sign in navigates to HomeScreen',
-        (WidgetTester tester) async {
-      ApiClient.instance = MockApiClient();
-
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: LoginScreen(),
-        ),
-      );
-
-      // Enter valid credentials
-      await tester.enterText(find.byType(TextField).at(0), 'student@fpt.edu.vn');
-      await tester.enterText(find.byType(TextField).at(1), '123456');
-
-      final signInBtn = find.widgetWithText(ElevatedButton, 'Đăng nhập');
-      expect(signInBtn, findsOneWidget);
-
-      await tester.tap(signInBtn);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(HomeScreen), findsOneWidget);
-
-      ApiClient.instance = null;
     });
 
     testWidgets('HomeScreen displays dynamic unread notification badge on bell icon',
@@ -218,8 +204,8 @@ void main() {
 
       // Find bell icon in top bar and tap it
       final bellFinder = find.byIcon(Icons.notifications_none_rounded);
-      expect(bellFinder, findsWidgets);
-      await tester.tap(bellFinder.first);
+      expect(bellFinder, findsOneWidget);
+      await tester.tap(bellFinder);
       await tester.pumpAndSettle();
 
       expect(find.byType(NotificationScreen), findsOneWidget);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/change_password_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/login_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/widget/bounce_tap.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/widget/password_criteria_checklist.dart';
 
 /// Screen for authenticated users to change their password, matching the FPT Schools design.
 class ChangePasswordScreen extends StatefulWidget {
@@ -171,7 +172,26 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   obscureText: _controller.obscureNewPassword,
                   onToggleObscure: _controller.toggleObscureNewPassword,
                 ),
-                const SizedBox(height: 14),
+                if (_controller.isSameAsOldPassword) ...[
+                  const SizedBox(height: 4),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Mật khẩu mới không được trùng với mật khẩu hiện tại',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFDC2626),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+                PasswordCriteriaChecklist(
+                  password: _controller.newPasswordController.text,
+                  oldPassword: _controller.oldPasswordController.text,
+                  showOldPasswordCheck: true,
+                ),
+                const SizedBox(height: 10),
 
                 _buildPasswordField(
                   controller: _controller.confirmPasswordController,
@@ -179,6 +199,22 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   obscureText: _controller.obscureConfirmPassword,
                   onToggleObscure: _controller.toggleObscureConfirmPassword,
                 ),
+                if (_controller.confirmPasswordController.text.isNotEmpty &&
+                    _controller.confirmPasswordController.text !=
+                        _controller.newPasswordController.text) ...[
+                  const SizedBox(height: 4),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Mật khẩu xác nhận không trùng khớp',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFDC2626),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 22),
 
                 // 5. Submit Button
@@ -187,11 +223,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
-                      onPressed: _controller.isLoading ? null : _handleSubmit,
+                      onPressed: _controller.canSubmit ? _handleSubmit : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: buttonYellow,
                         foregroundColor: textDark,
-                        elevation: 1,
+                        disabledBackgroundColor: const Color(0xFFE2E8F0),
+                        disabledForegroundColor: const Color(0xFF94A3B8),
+                        elevation: _controller.canSubmit ? 1 : 0,
                         shadowColor: buttonYellow.withValues(alpha: 0.3),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),

@@ -56,6 +56,11 @@ public class AdminAcademicController {
     return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createSchedule(req));
   }
 
+  @GetMapping("/requests")
+  public ResponseEntity<List<vn.edu.fpt.fschool.dto.RequestDtos.RequestResponse>> getAllRequests() {
+    return ResponseEntity.ok(adminService.getAllRequests());
+  }
+
   @PatchMapping("/requests/{id}/process")
   public ResponseEntity<String> processRequest(
       @PathVariable Long id,
