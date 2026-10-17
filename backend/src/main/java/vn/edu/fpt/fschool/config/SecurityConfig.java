@@ -64,8 +64,7 @@ public class SecurityConfig {
                       .contentTypeOptions(Customizer.withDefaults()))
           .authorizeHttpRequests(
               auth ->
-                  auth
-                      .dispatcherTypeMatchers(
+                  auth.dispatcherTypeMatchers(
                           jakarta.servlet.DispatcherType.FORWARD,
                           jakarta.servlet.DispatcherType.ERROR)
                       .permitAll()

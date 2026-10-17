@@ -121,7 +121,8 @@ class AuthSecurityMvcTest {
   }
 
   @Test
-  @DisplayName("Bảo mật: /admin, /admin/ và /admin/index.html là public web page (không bị chặn 403)")
+  @DisplayName(
+      "Bảo mật: /admin, /admin/ và /admin/index.html là public web page (không bị chặn 403)")
   void adminPortal_shouldBeAccessibleWithoutAuth() throws Exception {
     mockMvc.perform(get("/admin")).andExpect(status().isOk());
     mockMvc.perform(get("/admin/")).andExpect(status().isOk());

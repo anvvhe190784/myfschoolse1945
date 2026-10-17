@@ -2,36 +2,52 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>FPT Schools - Cổng Quản Trị Hệ Thống (Admin Portal)</title>
-    <link rel="stylesheet" href="/admin/style.css">
-    <link rel="icon" type="image/png" href="/admin/fpt_logo.png">
+    <link href="/admin/style.css" rel="stylesheet">
+    <link href="/admin/fpt_logo.png" rel="icon" type="image/png">
 </head>
 <body>
 
 <!-- Toast Notification Stack -->
-<div id="toast-container"></div>
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- Login Overlay -->
 <div id="login-overlay">
     <div class="login-card">
-        <img src="/admin/fpt_logo.png" alt="FPT Logo">
-        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 6px;">Quản Trị Hệ Thống</h2>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Đăng nhập tài khoản Quản trị viên
-            (ADMIN)</p>
+        <div class="login-logo-badge">
+            <img alt="FPT Logo" src="/admin/fpt_logo.png">
+        </div>
+        <h2 class="login-title">Quản Trị Hệ Thống</h2>
+        <p class="login-subtitle">Đăng nhập tài khoản Quản trị viên (ADMIN) FPT Schools</p>
 
         <form id="login-form">
-            <div class="form-group" style="text-align: left;">
+            <div class="form-group text-left">
                 <label class="form-label" for="login-email">Email Quản trị</label>
-                <input type="email" id="login-email" class="form-control" placeholder="example@fpt.edu.vn" required>
+                <div class="input-icon-wrapper">
+                    <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <input class="form-control with-icon" id="login-email" placeholder="admin@fpt.edu.vn" required type="email">
+                </div>
             </div>
-            <div class="form-group" style="text-align: left;">
+            <div class="form-group text-left">
                 <label class="form-label" for="login-password">Mật khẩu</label>
-                <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+                <div class="input-icon-wrapper">
+                    <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <input class="form-control with-icon" id="login-password" placeholder="••••••••" required type="password">
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary"
-                    style="width: 100%; justify-content: center; padding: 10px; margin-top: 8px;">
-                Đăng Nhập Quản Trị
+            <button class="btn btn-primary btn-block btn-lg" type="submit">
+                <span>Đăng Nhập Quản Trị</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
             </button>
         </form>
     </div>
@@ -39,146 +55,456 @@
 
 <!-- Main Application Layout -->
 <div id="app">
-    <!-- Sidebar -->
+    <!-- Sidebar (Vibrant Royal Blue) -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <img src="/admin/fpt_logo.png" alt="Logo">
-            <div>
-                <h2>FPT SCHOOLS</h2>
-                <span>Admin Workspace</span>
+            <div class="brand-box">
+                <img alt="Logo" src="/admin/fpt_logo.png" class="brand-logo">
+                <div class="brand-text">
+                    <h2>FPT Schools</h2>
+                    <span>Admin Workspace</span>
+                </div>
             </div>
         </div>
 
         <nav class="sidebar-nav">
             <a class="nav-item active" data-tab="dashboard">
-                <span class="icon">📊</span>
-                <span>Tổng quan</span>
+                <span class="icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                    </svg>
+                </span>
+                <span class="nav-label">Tổng quan</span>
             </a>
             <a class="nav-item" data-tab="users">
-                <span class="icon">👥</span>
-                <span>Quản lý Người dùng</span>
+                <span class="icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </span>
+                <span class="nav-label">Người dùng</span>
             </a>
             <a class="nav-item" data-tab="courses">
-                <span class="icon">📚</span>
-                <span>Khóa học & Môn học</span>
+                <span class="icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                </span>
+                <span class="nav-label">Khóa học</span>
             </a>
             <a class="nav-item" data-tab="classes">
-                <span class="icon">🏫</span>
-                <span>Quản lý Lớp học</span>
+                <span class="icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </span>
+                <span class="nav-label">Lớp học</span>
             </a>
             <a class="nav-item" data-tab="schedules">
-                <span class="icon">📅</span>
-                <span>Xếp Lịch học / Thi</span>
+                <span class="icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </span>
+                <span class="nav-label">Xếp lịch</span>
             </a>
             <a class="nav-item" data-tab="requests">
-                <span class="icon">📝</span>
-                <span>Xử lý Đơn từ</span>
+                <span class="icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </span>
+                <span class="nav-label">Đơn từ</span>
             </a>
             <a class="nav-item" data-tab="import">
-                <span class="icon">📥</span>
-                <span>Nhập dữ liệu CSV</span>
+                <span class="icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </span>
+                <span class="nav-label">Nạp CSV</span>
             </a>
         </nav>
 
         <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar" id="current-user-avatar">A</div>
-                <div class="user-details">
-                    <div class="user-name" id="current-user-name">Quản Trị Viên</div>
-                    <div class="user-role" id="current-user-role">ADMINISTRATOR</div>
-                </div>
+            <div class="sidebar-copyright">
+                <p class="brand-badge">FPT Schools</p>
+                <span>All rights reserved &copy; 2026</span>
             </div>
-            <button id="btn-logout" class="btn btn-secondary btn-sm" title="Đăng xuất">Thoát</button>
         </div>
     </aside>
 
     <!-- Main Content Area -->
     <main class="main-wrapper">
+        <!-- Top Header Bar with Profile & Notifications -->
         <header class="top-header">
-            <h1 id="page-title">Tổng quan hệ thống</h1>
-            <div class="top-header-actions">
-                <span style="font-size: 13px; color: var(--text-muted);">Phiên bản: 1.0.0-GA</span>
+            <div class="header-left">
+                <h1 id="page-title">Tổng quan hệ thống</h1>
+                <span class="page-subtitle">Bảng điều khiển quản trị trường học</span>
+            </div>
+
+            <div class="header-right">
+                <!-- Notifications Bell -->
+                <button class="icon-btn notif-btn" id="header-notif-btn" title="Đơn từ cần xử lý" aria-label="Thông báo đơn từ">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="notif-badge" id="header-notif-badge">0</span>
+                </button>
+
+                <!-- User Profile Trigger & Dropdown -->
+                <div class="user-profile-menu-container">
+                    <button class="user-profile-btn" id="user-profile-btn" aria-expanded="false" aria-haspopup="true">
+                        <div class="user-avatar" id="current-user-avatar">A</div>
+                        <div class="user-details">
+                            <span class="user-name" id="current-user-name">Quản Trị Viên</span>
+                            <span class="user-role" id="current-user-role">Admin</span>
+                        </div>
+                        <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Card -->
+                    <div class="user-dropdown-card" id="user-dropdown-menu" role="menu">
+                        <div class="dropdown-header">
+                            <strong id="dropdown-user-email">admin@fpt.edu.vn</strong>
+                            <span>Quản trị viên cấp cao</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" role="menuitem" onclick="switchTab('users'); closeUserDropdown();">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>Danh sách Tài khoản</span>
+                        </button>
+                        <button class="dropdown-item" role="menuitem" onclick="switchTab('requests'); closeUserDropdown();">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <span>Hàng đợi Đơn từ</span>
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item text-danger" id="btn-logout" role="menuitem">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            <span>Đăng xuất (Sign out)</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </header>
 
         <section class="content-body">
 
-            <!-- Tab 1: Dashboard -->
-            <div id="tab-dashboard" class="tab-pane active">
+            <!-- Tab 1: Dashboard (Inspired by Cash Market Dashboard) -->
+            <div class="tab-pane active" id="tab-dashboard">
+                <!-- Top 4 KPI Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon orange">👥</div>
-                        <div class="stat-info">
+                        <div class="stat-content">
+                            <span class="stat-label">Tổng người dùng</span>
                             <div class="stat-value" id="stat-users-count">--</div>
-                            <div class="stat-label">Tổng người dùng</div>
+                            <div class="stat-trend trend-up">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                </svg>
+                                <span>+100% tài khoản active</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon-circle blue-circle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
                         </div>
                     </div>
+
                     <div class="stat-card">
-                        <div class="stat-icon blue">📚</div>
-                        <div class="stat-info">
+                        <div class="stat-content">
+                            <span class="stat-label">Khóa học & Môn học</span>
                             <div class="stat-value" id="stat-courses-count">--</div>
-                            <div class="stat-label">Khóa học active</div>
+                            <div class="stat-trend trend-up">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                </svg>
+                                <span>Đang mở học kỳ Fall 2026</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon-circle blue-circle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
                         </div>
                     </div>
+
                     <div class="stat-card">
-                        <div class="stat-icon green">🏫</div>
-                        <div class="stat-info">
+                        <div class="stat-content">
+                            <span class="stat-label">Lớp học vận hành</span>
                             <div class="stat-value" id="stat-classes-count">--</div>
-                            <div class="stat-label">Lớp học mở</div>
+                            <div class="stat-trend trend-up">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                </svg>
+                                <span>Phân bổ đủ phòng & slot</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon-circle blue-circle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
                         </div>
                     </div>
+
                     <div class="stat-card">
-                        <div class="stat-icon purple">📝</div>
-                        <div class="stat-info">
+                        <div class="stat-content">
+                            <span class="stat-label">Đơn từ học sinh</span>
                             <div class="stat-value" id="stat-requests-count">--</div>
-                            <div class="stat-label">Đơn từ xử lý</div>
+                            <div class="stat-trend trend-up">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                </svg>
+                                <span>Hàng đợi cập nhật real-time</span>
+                            </div>
+                        </div>
+                        <div class="stat-icon-circle blue-circle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                            </svg>
                         </div>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">Hướng dẫn thao tác nhanh (Admin Workflows)</span>
+                <!-- 2-Column Dashboard Split -->
+                <div class="dashboard-split-grid">
+                    <!-- Left: Recent Requests Table Card -->
+                    <div class="dashboard-main-column">
+                        <div class="card dashboard-card">
+                            <div class="card-toolbar-header">
+                                <div class="toolbar-title-group">
+                                    <h3 class="section-title">Đơn từ học sinh gần đây</h3>
+                                    <span class="section-badge">Hàng đợi học vụ</span>
+                                </div>
+                                <div class="toolbar-controls">
+                                    <div class="search-box-sm">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        <input type="text" id="dashboard-requests-search" aria-label="Tìm kiếm theo tên học sinh hoặc tiêu đề đơn" placeholder="Tìm theo tên học sinh, tiêu đề...">
+                                    </div>
+                                    <select id="dashboard-requests-filter" class="select-sm" aria-label="Lọc theo trạng thái đơn">
+                                        <option value="ALL">Tất cả trạng thái</option>
+                                        <option value="PENDING">Chờ xử lý (Pending)</option>
+                                        <option value="APPROVED">Đã chấp thuận</option>
+                                        <option value="REJECTED">Đã từ chối</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table-modern">
+                                    <thead>
+                                    <tr>
+                                        <th>Mã Đơn</th>
+                                        <th>Học Sinh</th>
+                                        <th>Loại Đơn</th>
+                                        <th>Lý Do / Tiêu Đề</th>
+                                        <th>Ngày Gửi</th>
+                                        <th>Trạng Thái</th>
+                                        <th style="text-align: right;">Thao Tác</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="dashboard-requests-tbody">
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">Đang tải danh sách đơn từ...</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="card-footer-actions">
+                                <div class="quick-links">
+                                    <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-user')">+ Tạo Người Dùng</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="openModal('modal-create-class')">+ Mở Lớp Học</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="openModal('modal-create-schedule')">+ Xếp Lịch Mới</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="switchTab('import')">📥 Nạp Dữ Liệu CSV</button>
+                                </div>
+                                <button class="btn btn-link btn-sm" onclick="switchTab('requests')">Xem tất cả đơn từ &rarr;</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <p style="color: var(--text-muted); margin-bottom: 16px;">
-                            Chào mừng bạn đến với Cổng quản trị FPT Schools. Bạn có thể thực hiện đầy đủ các chức năng
-                            quản lý học sinh, phân lớp, thời khóa biểu, duyệt đơn và nạp dữ liệu hàng loạt.
-                        </p>
-                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="switchTab('users')">+ Tạo người dùng mới</button>
-                            <button class="btn btn-secondary" onclick="switchTab('classes')">+ Mở lớp học mới</button>
-                            <button class="btn btn-secondary" onclick="switchTab('schedules')">+ Xếp lịch học/thi
-                            </button>
-                            <button class="btn btn-secondary" onclick="switchTab('import')">📥 Tải template & Import
-                                CSV
-                            </button>
+
+                    <!-- Right Column: Analytics & Progress Widgets -->
+                    <div class="dashboard-side-column">
+                        <!-- Widget 1: Donut Chart -->
+                        <div class="card widget-card">
+                            <div class="widget-header">
+                                <h3 class="widget-title">Phân bổ Người dùng</h3>
+                                <button class="icon-more-btn" onclick="switchTab('users')" title="Xem chi tiết người dùng" aria-label="Xem chi tiết người dùng">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="1"></circle>
+                                        <circle cx="19" cy="12" r="1"></circle>
+                                        <circle cx="5" cy="12" r="1"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="donut-chart-container">
+                                <svg class="donut-chart-svg" viewBox="0 0 160 160">
+                                    <circle class="donut-bg" cx="80" cy="80" r="58"></circle>
+                                    <circle class="donut-segment seg-student" id="donut-seg-student" cx="80" cy="80" r="58"></circle>
+                                    <circle class="donut-segment seg-lecturer" id="donut-seg-lecturer" cx="80" cy="80" r="58"></circle>
+                                    <circle class="donut-segment seg-parent" id="donut-seg-parent" cx="80" cy="80" r="58"></circle>
+                                    <circle class="donut-segment seg-admin" id="donut-seg-admin" cx="80" cy="80" r="58"></circle>
+                                </svg>
+                                <div class="donut-center-info">
+                                    <span class="donut-value" id="donut-total-count">0</span>
+                                    <span class="donut-label">Tài khoản</span>
+                                </div>
+                            </div>
+
+                            <div class="chart-legend-grid">
+                                <div class="legend-item">
+                                    <span class="legend-dot dot-student"></span>
+                                    <span class="legend-text">Học sinh</span>
+                                    <strong class="legend-count" id="legend-student-count">0</strong>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot dot-lecturer"></span>
+                                    <span class="legend-text">Giảng viên</span>
+                                    <strong class="legend-count" id="legend-lecturer-count">0</strong>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot dot-parent"></span>
+                                    <span class="legend-text">Phụ huynh</span>
+                                    <strong class="legend-count" id="legend-parent-count">0</strong>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot dot-admin"></span>
+                                    <span class="legend-text">Quản trị</span>
+                                    <strong class="legend-count" id="legend-admin-count">0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Widget 2: Operations Progress -->
+                        <div class="card widget-card">
+                            <div class="widget-header">
+                                <h3 class="widget-title">Tiến độ Vận hành</h3>
+                                <button class="icon-more-btn" onclick="loadDashboardStats()" title="Làm mới tiến độ" aria-label="Làm mới tiến độ">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="23 4 23 10 17 10"></polyline>
+                                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="progress-list">
+                                <div class="progress-item">
+                                    <div class="progress-label-row">
+                                        <span class="progress-name">Xử lý Đơn từ</span>
+                                        <span class="progress-pct" id="progress-requests-pct">0%</span>
+                                    </div>
+                                    <div class="progress-track">
+                                        <div class="progress-fill fill-blue" id="progress-requests-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="progress-item">
+                                    <div class="progress-label-row">
+                                        <span class="progress-name">Tài khoản Active</span>
+                                        <span class="progress-pct" id="progress-active-pct">0%</span>
+                                    </div>
+                                    <div class="progress-track">
+                                        <div class="progress-fill fill-amber" id="progress-active-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="progress-item">
+                                    <div class="progress-label-row">
+                                        <span class="progress-name">Phân công Lớp học</span>
+                                        <span class="progress-pct" id="progress-classes-pct">0%</span>
+                                    </div>
+                                    <div class="progress-track">
+                                        <div class="progress-fill fill-purple" id="progress-classes-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Tab 2: Quản lý Người dùng (Users: UC-ADM-01, 02, 03) -->
-            <div id="tab-users" class="tab-pane">
+            <div class="tab-pane" id="tab-users">
                 <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">Danh sách Người dùng (Tài khoản)</span>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-user')">+ Thêm Người
-                            Dùng
-                        </button>
+                    <div class="card-toolbar-header">
+                        <div class="toolbar-title-group">
+                            <h3 class="section-title">Danh sách Người dùng</h3>
+                            <span class="section-badge">Tài khoản toàn trường</span>
+                        </div>
+                        <div class="toolbar-controls">
+                            <button class="btn btn-secondary btn-sm" id="btn-refresh-users">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                <span>Làm mới</span>
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-user')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Thêm Người Dùng</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <div class="toolbar">
-                            <input type="text" id="user-search-input" class="search-input"
-                                   placeholder="Tìm theo Tên, Email, Mã HS..."
-                                   aria-label="Tìm theo Tên, Email, Mã HS">
-                            <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-secondary btn-sm" id="btn-refresh-users">Làm mới</button>
+                        <div class="toolbar-search-strip">
+                            <div class="search-box">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <input aria-label="Tìm theo Tên, Email, Mã HS" class="search-input" id="user-search-input"
+                                       placeholder="Tìm kiếm theo Tên, Email, Mã định danh..." type="text">
                             </div>
                         </div>
 
                         <div class="table-responsive">
-                            <table>
+                            <table class="table-modern">
                                 <thead>
                                 <tr>
                                     <th>ID</th>
@@ -188,14 +514,12 @@
                                     <th>Mã Định Danh</th>
                                     <th>SĐT</th>
                                     <th>Trạng thái</th>
-                                    <th>Thao tác</th>
+                                    <th style="text-align: right;">Thao tác</th>
                                 </tr>
                                 </thead>
                                 <tbody id="users-table-body">
                                 <tr>
-                                    <td colspan="8" style="text-align: center; color: var(--text-muted);">Đang tải dữ
-                                        liệu người dùng...
-                                    </td>
+                                    <td colspan="8" class="text-center text-muted">Đang tải dữ liệu người dùng...</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -205,17 +529,26 @@
             </div>
 
             <!-- Tab 3: Khóa học & Môn học (Courses: UC-ADM-04) -->
-            <div id="tab-courses" class="tab-pane">
+            <div class="tab-pane" id="tab-courses">
                 <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">Danh mục Khóa học & Môn học</span>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-course')">+ Thêm Khóa
-                            Học
-                        </button>
+                    <div class="card-toolbar-header">
+                        <div class="toolbar-title-group">
+                            <h3 class="section-title">Danh mục Khóa học & Môn học</h3>
+                            <span class="section-badge">Chương trình đào tạo</span>
+                        </div>
+                        <div class="toolbar-controls">
+                            <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-course')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Thêm Khóa Học</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table>
+                            <table class="table-modern">
                                 <thead>
                                 <tr>
                                     <th>ID</th>
@@ -227,9 +560,7 @@
                                 </thead>
                                 <tbody id="courses-table-body">
                                 <tr>
-                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải danh
-                                        sách khóa học...
-                                    </td>
+                                    <td colspan="5" class="text-center text-muted">Đang tải danh sách khóa học...</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -239,17 +570,26 @@
             </div>
 
             <!-- Tab 4: Quản lý Lớp học (Classes: UC-ADM-05) -->
-            <div id="tab-classes" class="tab-pane">
+            <div class="tab-pane" id="tab-classes">
                 <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">Danh sách Lớp học</span>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-class')">+ Tạo Lớp Học
-                            Mới
-                        </button>
+                    <div class="card-toolbar-header">
+                        <div class="toolbar-title-group">
+                            <h3 class="section-title">Danh sách Lớp học</h3>
+                            <span class="section-badge">Phân lớp & Giảng viên</span>
+                        </div>
+                        <div class="toolbar-controls">
+                            <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-class')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Mở Lớp Mới</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table>
+                            <table class="table-modern">
                                 <thead>
                                 <tr>
                                     <th>ID</th>
@@ -261,9 +601,7 @@
                                 </thead>
                                 <tbody id="classes-table-body">
                                 <tr>
-                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải danh
-                                        sách lớp học...
-                                    </td>
+                                    <td colspan="5" class="text-center text-muted">Đang tải danh sách lớp học...</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -273,21 +611,29 @@
             </div>
 
             <!-- Tab 5: Xếp Lịch học / Lịch thi (Schedules: UC-ADM-06) -->
-            <div id="tab-schedules" class="tab-pane">
+            <div class="tab-pane" id="tab-schedules">
                 <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">Xếp Lịch Học & Lịch Thi</span>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-schedule')">+ Thêm Lịch
-                            Học Mới
-                        </button>
+                    <div class="card-toolbar-header">
+                        <div class="toolbar-title-group">
+                            <h3 class="section-title">Xếp Lịch Học & Lịch Thi</h3>
+                            <span class="section-badge">Thời khóa biểu</span>
+                        </div>
+                        <div class="toolbar-controls">
+                            <button class="btn btn-primary btn-sm" onclick="openModal('modal-create-schedule')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Thêm Lịch Học</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <p style="color: var(--text-muted); margin-bottom: 16px;">
-                            Thực hiện xếp thời khóa biểu cho lớp học theo ngày, ca học (Slot), phòng học hoặc hình thức
-                            học trực tuyến.
+                        <p class="text-muted" style="margin-bottom: 18px;">
+                            Thực hiện xếp thời khóa biểu cho lớp học theo ngày, ca học (Slot 1 - 5), phòng học hoặc hình thức học trực tuyến.
                         </p>
                         <div class="table-responsive">
-                            <table>
+                            <table class="table-modern">
                                 <thead>
                                 <tr>
                                     <th>Mã Lớp</th>
@@ -299,9 +645,7 @@
                                 </thead>
                                 <tbody id="schedules-preview-body">
                                 <tr>
-                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Chọn "Thêm
-                                        Lịch Học Mới" để lên lịch giảng dạy cho lớp.
-                                    </td>
+                                    <td colspan="5" class="text-center text-muted">Chọn "Thêm Lịch Học" để lên lịch giảng dạy cho lớp.</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -311,31 +655,40 @@
             </div>
 
             <!-- Tab 6: Xử lý Đơn từ (Requests: UC-ADM-07) -->
-            <div id="tab-requests" class="tab-pane">
+            <div class="tab-pane" id="tab-requests">
                 <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">Hàng đợi Đơn từ & Yêu cầu của Học sinh</span>
-                        <button class="btn btn-secondary btn-sm" id="btn-refresh-requests">Làm mới danh sách</button>
+                    <div class="card-toolbar-header">
+                        <div class="toolbar-title-group">
+                            <h3 class="section-title">Hàng đợi Đơn từ Học sinh</h3>
+                            <span class="section-badge">Tiếp nhận & Phê duyệt</span>
+                        </div>
+                        <div class="toolbar-controls">
+                            <button class="btn btn-secondary btn-sm" id="btn-refresh-requests">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                <span>Làm mới danh sách</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table>
+                            <table class="table-modern">
                                 <thead>
                                 <tr>
                                     <th>Mã Đơn</th>
-                                    <th>Mã HS / Người gửi</th>
+                                    <th>Học Sinh / Người gửi</th>
                                     <th>Loại Đơn</th>
                                     <th>Lý Do / Nội Dung</th>
                                     <th>Ngày Gửi</th>
                                     <th>Trạng Thái</th>
-                                    <th>Thao Tác Duyệt</th>
+                                    <th style="text-align: right;">Thao Tác</th>
                                 </tr>
                                 </thead>
                                 <tbody id="requests-table-body">
                                 <tr>
-                                    <td colspan="7" style="text-align: center; color: var(--text-muted);">Đang tải danh
-                                        sách đơn từ...
-                                    </td>
+                                    <td colspan="7" class="text-center text-muted">Đang tải danh sách đơn từ...</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -345,39 +698,60 @@
             </div>
 
             <!-- Tab 7: Nhập dữ liệu CSV (Bulk Import: UC-ADM-08 -> 12) -->
-            <div id="tab-import" class="tab-pane">
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">1. Tải File Mẫu CSV Chuẩn (Templates)</span>
+            <div class="tab-pane" id="tab-import">
+                <div class="card" style="margin-bottom: 24px;">
+                    <div class="card-toolbar-header">
+                        <div class="toolbar-title-group">
+                            <h3 class="section-title">1. Tải File Mẫu CSV Chuẩn (Templates)</h3>
+                            <span class="section-badge">Mẫu nạp dữ liệu</span>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <p style="color: var(--text-muted); margin-bottom: 14px;">Tải về cấu trúc cột CSV hợp lệ trước
-                            khi điền dữ liệu:</p>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-secondary" onclick="downloadTemplate('users')">📄 Mẫu Người dùng
-                                (users.csv)
+                        <p class="text-muted" style="margin-bottom: 16px;">Tải về cấu trúc cột CSV hợp lệ trước khi điền dữ liệu:</p>
+                        <div class="template-btns-grid">
+                            <button class="btn btn-secondary template-btn" onclick="downloadTemplate('users')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                <span>Mẫu Người dùng (users.csv)</span>
                             </button>
-                            <button class="btn btn-secondary" onclick="downloadTemplate('grades')">📄 Mẫu Điểm số
-                                (grades.csv)
+                            <button class="btn btn-secondary template-btn" onclick="downloadTemplate('grades')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                <span>Mẫu Điểm số (grades.csv)</span>
                             </button>
-                            <button class="btn btn-secondary" onclick="downloadTemplate('schedules')">📄 Mẫu Lịch học
-                                (schedules.csv)
+                            <button class="btn btn-secondary template-btn" onclick="downloadTemplate('schedules')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                <span>Mẫu Lịch học (schedules.csv)</span>
                             </button>
-                            <button class="btn btn-secondary" onclick="downloadTemplate('enrollments')">📄 Mẫu Gán lớp
-                                (enrollments.csv)
+                            <button class="btn btn-secondary template-btn" onclick="downloadTemplate('enrollments')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                <span>Mẫu Gán lớp (enrollments.csv)</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">2. Tải Lên & Xử Lý File CSV Hàng Loạt</span>
+                    <div class="card-toolbar-header">
+                        <div class="toolbar-title-group">
+                            <h3 class="section-title">2. Tải Lên & Xử Lý File CSV Hàng Loạt</h3>
+                            <span class="section-badge">Xử lý tự động</span>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <div class="form-group" style="max-width: 320px;">
+                        <div class="form-group" style="max-width: 360px; margin-bottom: 20px;">
                             <label class="form-label" for="import-type-select">Chọn phân hệ nạp dữ liệu:</label>
-                            <select id="import-type-select" class="form-control">
+                            <select class="form-control" id="import-type-select">
                                 <option value="users">Người dùng (Users)</option>
                                 <option value="grades">Điểm số (Grades)</option>
                                 <option value="schedules">Lịch học / Lịch thi (Schedules)</option>
@@ -385,48 +759,50 @@
                             </select>
                         </div>
 
-                        <div id="drop-zone" class="upload-zone">
-                            <div class="upload-icon">📁</div>
-                            <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">Kéo thả file CSV vào đây
-                                hoặc bấm để chọn file
+                        <div class="upload-zone" id="drop-zone">
+                            <div class="upload-icon-circle">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
                             </div>
-                            <div style="color: var(--text-muted); font-size: 12px;">Chỉ hỗ trợ định dạng .csv chuẩn
-                                UTF-8
+                            <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px; color: var(--text-main);">
+                                Kéo thả file CSV vào đây hoặc bấm để chọn file
                             </div>
-                            <input type="file" id="csv-file-input" accept=".csv" style="display: none;" aria-label="Chọn tệp tin CSV nạp dữ liệu">
+                            <div style="color: var(--text-muted); font-size: 13px;">
+                                Chỉ hỗ trợ định dạng .csv mã hóa chuẩn UTF-8
+                            </div>
+                            <input accept=".csv" aria-label="Chọn tệp tin CSV nạp dữ liệu" id="csv-file-input" style="display: none;" type="file">
                         </div>
 
                         <!-- Import Results -->
                         <div id="import-result-container" style="display: none; margin-top: 24px;">
-                            <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">Kết Quả Nạp Dữ Liệu</h3>
+                            <h3 class="section-title" style="margin-bottom: 14px;">Kết Quả Nạp Dữ Liệu</h3>
                             <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 16px;">
-                                <div class="stat-card">
-                                    <div class="stat-info">
-                                        <div class="stat-value" id="res-total">0</div>
-                                        <div class="stat-label">Tổng số dòng</div>
+                                <div class="stat-card" style="padding: 16px;">
+                                    <div class="stat-content">
+                                        <span class="stat-label">Tổng số dòng</span>
+                                        <div class="stat-value" id="res-total" style="font-size: 24px;">0</div>
                                     </div>
                                 </div>
-                                <div class="stat-card">
-                                    <div class="stat-info">
-                                        <div class="stat-value" id="res-success" style="color: var(--success);">0</div>
-                                        <div class="stat-label">Nạp thành công</div>
+                                <div class="stat-card" style="padding: 16px;">
+                                    <div class="stat-content">
+                                        <span class="stat-label">Nạp thành công</span>
+                                        <div class="stat-value" id="res-success" style="font-size: 24px; color: var(--success);">0</div>
                                     </div>
                                 </div>
-                                <div class="stat-card">
-                                    <div class="stat-info">
-                                        <div class="stat-value" id="res-failed" style="color: var(--danger);">0</div>
-                                        <div class="stat-label">Bản ghi thất bại</div>
+                                <div class="stat-card" style="padding: 16px;">
+                                    <div class="stat-content">
+                                        <span class="stat-label">Bản ghi thất bại</span>
+                                        <div class="stat-value" id="res-failed" style="font-size: 24px; color: var(--danger);">0</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div id="res-errors-box"
-                                 style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 14px;">
-                                <div style="color: #991b1b; font-weight: 700; margin-bottom: 6px;">Chi tiết lỗi phát
-                                    sinh:
-                                </div>
-                                <ul id="res-errors-list"
-                                    style="margin-left: 20px; font-size: 12px; color: #b91c1c;"></ul>
+                            <div id="res-errors-box" class="import-errors-box" style="display: none;">
+                                <div class="errors-box-title">Chi tiết lỗi phát sinh:</div>
+                                <ul id="res-errors-list" class="errors-box-list"></ul>
                             </div>
                         </div>
                     </div>
@@ -438,30 +814,29 @@
 </div>
 
 <!-- Modal: Create User -->
-<div id="modal-create-user" class="modal-backdrop">
+<div class="modal-backdrop" id="modal-create-user">
     <div class="modal">
         <div class="modal-header">
-            <h3 class="card-title">Tạo Tài Khoản Người Dùng Mới</h3>
-            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-user')">✕</button>
+            <h3 class="modal-title">Tạo Tài Khoản Người Dùng Mới</h3>
+            <button class="modal-close-btn" onclick="closeModal('modal-create-user')" aria-label="Đóng cửa sổ">✕</button>
         </div>
         <form id="form-create-user">
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label" for="user-fullname">Họ và Tên *</label>
-                    <input type="text" id="user-fullname" class="form-control" required placeholder="Nguyễn Văn An">
+                    <input class="form-control" id="user-fullname" placeholder="Nguyễn Văn An" required type="text">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="user-email">Email *</label>
-                    <input type="email" id="user-email" class="form-control" required placeholder="an@fpt.edu.vn">
+                    <input class="form-control" id="user-email" placeholder="an@fpt.edu.vn" required type="email">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="user-password">Mật Khẩu Khởi Tạo *</label>
-                    <input type="password" id="user-password" class="form-control" required
-                           placeholder="Tối thiểu 6 ký tự">
+                    <input class="form-control" id="user-password" placeholder="Tối thiểu 6 ký tự" required type="password">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="user-role">Vai Trò (Role) *</label>
-                    <select id="user-role" class="form-control" required>
+                    <select class="form-control" id="user-role" required>
                         <option value="STUDENT">Học sinh (STUDENT)</option>
                         <option value="LECTURER">Giáo viên / Giảng viên (LECTURER)</option>
                         <option value="PARENT">Phụ huynh (PARENT)</option>
@@ -470,114 +845,111 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="user-phone">Số Điện Thoại</label>
-                    <input type="tel" id="user-phone" class="form-control" placeholder="0912345678">
+                    <input class="form-control" id="user-phone" placeholder="0912345678" type="tel">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="user-rollnumber">Mã Học Sinh / Roll Number</label>
-                    <input type="text" id="user-rollnumber" class="form-control"
-                           placeholder="HE194500 (chỉ cho học sinh)">
+                    <input class="form-control" id="user-rollnumber" placeholder="HE194500 (chỉ cho học sinh)" type="text">
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-user')">Hủy</button>
-                <button type="submit" class="btn btn-primary">Xác Nhận Tạo</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-create-user')" type="button">Hủy</button>
+                <button class="btn btn-primary" type="submit">Xác Nhận Tạo</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Modal: Create Course -->
-<div id="modal-create-course" class="modal-backdrop">
+<div class="modal-backdrop" id="modal-create-course">
     <div class="modal">
         <div class="modal-header">
-            <h3 class="card-title">Thêm Khóa Học / Môn Học Mới</h3>
-            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-course')">✕</button>
+            <h3 class="modal-title">Thêm Khóa Học / Môn Học Mới</h3>
+            <button class="modal-close-btn" onclick="closeModal('modal-create-course')" aria-label="Đóng cửa sổ">✕</button>
         </div>
         <form id="form-create-course">
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label" for="course-code">Mã Khóa / Môn Học *</label>
-                    <input type="text" id="course-code" class="form-control" required placeholder="PRJ301, PRO192...">
+                    <input class="form-control" id="course-code" placeholder="PRJ301, PRO192..." required type="text">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="course-name">Tên Môn Học *</label>
-                    <input type="text" id="course-name" class="form-control" required placeholder="Lập trình Java Web">
+                    <input class="form-control" id="course-name" placeholder="Lập trình Java Web" required type="text">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="course-credits">Số Tín Chỉ *</label>
-                    <input type="number" id="course-credits" class="form-control" min="1" max="10" value="3" required>
+                    <input class="form-control" id="course-credits" max="10" min="1" required type="number" value="3">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="course-desc">Mô Tả Môn Học</label>
-                    <textarea id="course-desc" class="form-control" rows="3"
-                              placeholder="Môn học bắt buộc chuyên ngành..."></textarea>
+                    <textarea class="form-control" id="course-desc" placeholder="Môn học bắt buộc chuyên ngành..." rows="3"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-course')">Hủy</button>
-                <button type="submit" class="btn btn-primary">Lưu Khóa Học</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-create-course')" type="button">Hủy</button>
+                <button class="btn btn-primary" type="submit">Lưu Khóa Học</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Modal: Create Class -->
-<div id="modal-create-class" class="modal-backdrop">
+<div class="modal-backdrop" id="modal-create-class">
     <div class="modal">
         <div class="modal-header">
-            <h3 class="card-title">Mở Lớp Học Mới</h3>
-            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-class')">✕</button>
+            <h3 class="modal-title">Mở Lớp Học Mới</h3>
+            <button class="modal-close-btn" onclick="closeModal('modal-create-class')" aria-label="Đóng cửa sổ">✕</button>
         </div>
         <form id="form-create-class">
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label" for="class-code">Mã Lớp Học *</label>
-                    <input type="text" id="class-code" class="form-control" required placeholder="SE1945, IA1801...">
+                    <input class="form-control" id="class-code" placeholder="SE1945, IA1801..." required type="text">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="class-course-id">Chọn Môn Học *</label>
-                    <select id="class-course-id" class="form-control" required>
+                    <select class="form-control" id="class-course-id" required>
                         <option value="">-- Chọn khóa học --</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="class-teacher-id">ID Giáo Viên Phụ Trách *</label>
-                    <input type="number" id="class-teacher-id" class="form-control" required
-                           placeholder="Nhập ID giảng viên">
+                    <input class="form-control" id="class-teacher-id" placeholder="Nhập ID giảng viên" required type="number">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="class-semester">Học Kỳ *</label>
-                    <input type="text" id="class-semester" class="form-control" required value="Fall 2026">
+                    <input class="form-control" id="class-semester" required type="text" value="Fall 2026">
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-class')">Hủy</button>
-                <button type="submit" class="btn btn-primary">Tạo Lớp</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-create-class')" type="button">Hủy</button>
+                <button class="btn btn-primary" type="submit">Tạo Lớp</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Modal: Create Schedule -->
-<div id="modal-create-schedule" class="modal-backdrop">
+<div class="modal-backdrop" id="modal-create-schedule">
     <div class="modal">
         <div class="modal-header">
-            <h3 class="card-title">Lên Lịch Học / Lịch Thi Cho Lớp</h3>
-            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-create-schedule')">✕</button>
+            <h3 class="modal-title">Lên Lịch Học / Lịch Thi Cho Lớp</h3>
+            <button class="modal-close-btn" onclick="closeModal('modal-create-schedule')" aria-label="Đóng cửa sổ">✕</button>
         </div>
         <form id="form-create-schedule">
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label" for="sched-class-code">Mã Lớp Học *</label>
-                    <input type="text" id="sched-class-code" class="form-control" required placeholder="SE1945">
+                    <input class="form-control" id="sched-class-code" placeholder="SE1945" required type="text">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="sched-date">Ngày Học (YYYY-MM-DD) *</label>
-                    <input type="date" id="sched-date" class="form-control" required>
+                    <input class="form-control" id="sched-date" required type="date">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="sched-slot">Ca Học (Slot 1 - 6) *</label>
-                    <select id="sched-slot" class="form-control" required>
+                    <label class="form-label" for="sched-slot">Ca Học (Slot 1 - 5) *</label>
+                    <select class="form-control" id="sched-slot" required>
                         <option value="1">Slot 1 (07:30 - 09:50)</option>
                         <option value="2">Slot 2 (10:00 - 12:20)</option>
                         <option value="3">Slot 3 (12:50 - 15:10)</option>
@@ -587,54 +959,50 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="sched-room">Phòng Học / Địa Điểm *</label>
-                    <input type="text" id="sched-room" class="form-control" required
-                           placeholder="BE-302 hoặc Google Meet">
+                    <input class="form-control" id="sched-room" placeholder="BE-302 hoặc Google Meet" required type="text">
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-schedule')">Hủy
-                </button>
-                <button type="submit" class="btn btn-primary">Lưu Lịch Học</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-create-schedule')" type="button">Hủy</button>
+                <button class="btn btn-primary" type="submit">Lưu Lịch Học</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Modal: Process Request -->
-<div id="modal-process-request" class="modal-backdrop">
+<div class="modal-backdrop" id="modal-process-request">
     <div class="modal">
         <div class="modal-header">
-            <h3 class="card-title">Phê Duyệt / Xử Lý Đơn Từ</h3>
-            <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-process-request')">✕</button>
+            <h3 class="modal-title">Phê Duyệt / Xử Lý Đơn Từ</h3>
+            <button class="modal-close-btn" onclick="closeModal('modal-process-request')" aria-label="Đóng cửa sổ">✕</button>
         </div>
         <form id="form-process-request">
             <div class="modal-body">
-                <input type="hidden" id="process-req-id" aria-hidden="true">
+                <input aria-hidden="true" id="process-req-id" type="hidden">
                 <div class="form-group">
                     <label class="form-label" for="process-status">Quyết Định Phê Duyệt *</label>
-                    <select id="process-status" class="form-control" required>
+                    <select class="form-control" id="process-status" required>
                         <option value="APPROVED">CHẤP THUẬN (APPROVED)</option>
                         <option value="REJECTED">TỪ CHỐI (REJECTED)</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="process-note">Ghi Chú Phản Hồi (Note)</label>
-                    <textarea id="process-note" class="form-control" rows="3"
-                              placeholder="Lý do chấp thuận hoặc từ chối đơn..."></textarea>
+                    <textarea class="form-control" id="process-note" placeholder="Lý do chấp thuận hoặc từ chối đơn..." rows="3"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-process-request')">Hủy
-                </button>
-                <button type="submit" class="btn btn-primary">Cập Nhật Trạng Thái</button>
+                <button class="btn btn-secondary" onclick="closeModal('modal-process-request')" type="button">Hủy</button>
+                <button class="btn btn-primary" type="submit">Cập Nhật Trạng Thái</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Template definitions for dynamic UI components (Toast, Badges, Dragover) -->
+<!-- Dynamic UI Templates -->
 <template id="admin-ui-templates">
-    <div class="toast toast-success toast-error show dragover btn-success btn-danger badge-active badge-inactive badge-pending badge-approved badge-rejected badge-role"></div>
+    <div class="toast toast-success toast-error toast-warning toast-info show dragover status-delivered status-canceled status-pending status-approved status-rejected badge-role"></div>
 </template>
 
 <script src="/admin/app.js"></script>
