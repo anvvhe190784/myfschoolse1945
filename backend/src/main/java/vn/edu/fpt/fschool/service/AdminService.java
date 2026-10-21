@@ -1,26 +1,44 @@
 package vn.edu.fpt.fschool.service;
 
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.edu.fpt.fschool.dto.AdminDtos.*;
+import vn.edu.fpt.fschool.dto.AdminDtos.ClassResponse;
+import vn.edu.fpt.fschool.dto.AdminDtos.CourseResponse;
+import vn.edu.fpt.fschool.dto.AdminDtos.CreateClassRequest;
+import vn.edu.fpt.fschool.dto.AdminDtos.CreateCourseRequest;
+import vn.edu.fpt.fschool.dto.AdminDtos.CreateUserRequest;
+import vn.edu.fpt.fschool.dto.AdminDtos.UpdateUserStatusRequest;
+import vn.edu.fpt.fschool.dto.AdminDtos.UserResponse;
+import vn.edu.fpt.fschool.dto.RequestDtos.RequestResponse;
 import vn.edu.fpt.fschool.dto.RequestDtos.UpdateRequestStatusDto;
 import vn.edu.fpt.fschool.dto.ScheduleDtos.CreateScheduleRequest;
 import vn.edu.fpt.fschool.dto.ScheduleDtos.ScheduleResponse;
 import vn.edu.fpt.fschool.event.RequestProcessedEvent;
 import vn.edu.fpt.fschool.mapper.AcademicMapper;
 import vn.edu.fpt.fschool.mapper.UserMapper;
-import vn.edu.fpt.fschool.model.*;
-import vn.edu.fpt.fschool.repository.*;
+import vn.edu.fpt.fschool.model.ClassEntity;
+import vn.edu.fpt.fschool.model.ClassEnrollment;
+import vn.edu.fpt.fschool.model.Course;
+import vn.edu.fpt.fschool.model.RequestEntity;
+import vn.edu.fpt.fschool.model.RequestStatus;
+import vn.edu.fpt.fschool.model.Schedule;
+import vn.edu.fpt.fschool.model.User;
+import vn.edu.fpt.fschool.repository.ClassEnrollmentRepository;
+import vn.edu.fpt.fschool.repository.ClassRepository;
+import vn.edu.fpt.fschool.repository.CourseRepository;
+import vn.edu.fpt.fschool.repository.RequestRepository;
+import vn.edu.fpt.fschool.repository.ScheduleRepository;
+import vn.edu.fpt.fschool.repository.UserRepository;
+import vn.edu.fpt.fschool.util.PostCommitExecutor;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AdminService {
 
@@ -34,6 +52,39 @@ public class AdminService {
   private final UserMapper userMapper;
   private final AcademicMapper academicMapper;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final TokenVersionService tokenVersionService;
+  private final RefreshTokenService refreshTokenService;
+  private final PostCommitExecutor postCommitExecutor;
+
+  @Autowired
+  public AdminService(
+      UserRepository userRepository,
+      CourseRepository courseRepository,
+      ClassRepository classRepository,
+      ClassEnrollmentRepository classEnrollmentRepository,
+      ScheduleRepository scheduleRepository,
+      RequestRepository requestRepository,
+      PasswordEncoder passwordEncoder,
+      UserMapper userMapper,
+      AcademicMapper academicMapper,
+      ApplicationEventPublisher applicationEventPublisher,
+      TokenVersionService tokenVersionService,
+      RefreshTokenService refreshTokenService,
+      PostCommitExecutor postCommitExecutor) {
+    this.userRepository = userRepository;
+    this.courseRepository = courseRepository;
+    this.classRepository = classRepository;
+    this.classEnrollmentRepository = classEnrollmentRepository;
+    this.scheduleRepository = scheduleRepository;
+    this.requestRepository = requestRepository;
+    this.passwordEncoder = passwordEncoder;
+    this.userMapper = userMapper;
+    this.academicMapper = academicMapper;
+    this.applicationEventPublisher = applicationEventPublisher;
+    this.tokenVersionService = tokenVersionService;
+    this.refreshTokenService = refreshTokenService;
+    this.postCommitExecutor = postCommitExecutor;
+  }
 
   // --- USER MANAGEMENT ---
   @Transactional
@@ -86,7 +137,18 @@ public class AdminService {
             .orElseThrow(
                 () -> new IllegalArgumentException("Không tìm thấy user với ID: " + userId));
 
-    user.setStatus(req.status().toUpperCase());
+    String newStatus = req.status().toUpperCase();
+    user.setStatus(newStatus);
+    if (!"ACTIVE".equals(newStatus)) {
+      int newVersion = user.getTokenVersion() != null ? user.getTokenVersion() + 1 : 2;
+      user.setTokenVersion(newVersion);
+      String userEmail = user.getEmail();
+      postCommitExecutor.execute(
+          () -> {
+            tokenVersionService.updateUserTokenVersion(userEmail, newVersion);
+            refreshTokenService.revokeAllUserTokens(userEmail);
+          });
+    }
     return userMapper.toUserResponse(userRepository.save(user));
   }
 
@@ -109,8 +171,19 @@ public class AdminService {
   }
 
   @Transactional(readOnly = true)
+  public List<CourseResponse> getAllCourses(Pageable pageable) {
+    return findCourses(pageable);
+  }
+
+  @Transactional(readOnly = true)
   public List<CourseResponse> getAllCourses() {
-    return academicMapper.toCourseResponseList(courseRepository.findAll());
+    return findCourses(PageRequest.of(0, 50));
+  }
+
+  private List<CourseResponse> findCourses(Pageable pageable) {
+    int safeSize = Math.clamp(pageable.getPageSize(), 1, 50);
+    Pageable safePageable = PageRequest.of(pageable.getPageNumber(), safeSize, pageable.getSort());
+    return academicMapper.toCourseResponseList(courseRepository.findAll(safePageable).getContent());
   }
 
   @Transactional
@@ -152,8 +225,19 @@ public class AdminService {
   }
 
   @Transactional(readOnly = true)
+  public List<ClassResponse> getAllClasses(Pageable pageable) {
+    return findClasses(pageable);
+  }
+
+  @Transactional(readOnly = true)
   public List<ClassResponse> getAllClasses() {
-    return academicMapper.toClassResponseList(classRepository.findAll());
+    return findClasses(PageRequest.of(0, 50));
+  }
+
+  private List<ClassResponse> findClasses(Pageable pageable) {
+    int safeSize = Math.clamp(pageable.getPageSize(), 1, 50);
+    Pageable safePageable = PageRequest.of(pageable.getPageNumber(), safeSize, pageable.getSort());
+    return academicMapper.toClassResponseList(classRepository.findAll(safePageable).getContent());
   }
 
   @Transactional(readOnly = true)
@@ -245,7 +329,19 @@ public class AdminService {
   }
 
   @Transactional(readOnly = true)
-  public List<vn.edu.fpt.fschool.dto.RequestDtos.RequestResponse> getAllRequests() {
-    return academicMapper.toRequestResponseList(requestRepository.findAll());
+  public List<RequestResponse> getAllRequests(Pageable pageable) {
+    return findRequests(pageable);
+  }
+
+  @Transactional(readOnly = true)
+  public List<RequestResponse> getAllRequests() {
+    return findRequests(PageRequest.of(0, 50));
+  }
+
+  private List<RequestResponse> findRequests(Pageable pageable) {
+    int safeSize = Math.clamp(pageable.getPageSize(), 1, 50);
+    Pageable safePageable = PageRequest.of(pageable.getPageNumber(), safeSize, pageable.getSort());
+    return academicMapper.toRequestResponseList(
+        requestRepository.findAll(safePageable).getContent());
   }
 }

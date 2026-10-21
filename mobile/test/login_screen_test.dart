@@ -102,4 +102,55 @@ void main() {
 
     ApiClient.instance = null;
   });
+
+  testWidgets('LoginScreen blocks LECTURER and ADMIN with restricted dialog', (WidgetTester tester) async {
+    for (final restrictedRole in ['LECTURER', 'ADMIN']) {
+      ApiClient.instance = RoleMockApiClient(restrictedRole);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: LoginScreen(),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField).at(0), '$restrictedRole@fpt.edu.vn');
+      await tester.enterText(find.byType(TextField).at(1), '123456');
+
+      final signInBtn = find.widgetWithText(ElevatedButton, 'Đăng nhập');
+      await tester.tap(signInBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Truy cập bị giới hạn'), findsOneWidget);
+      expect(
+        find.text(
+          'Ứng dụng di động hiện chỉ dành riêng cho Sinh viên. Thầy/Cô và Quản trị viên vui lòng truy cập Cổng thông tin Web để làm việc.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(HomeScreen), findsNothing);
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(ApiClient.instance?.authToken, isNull);
+
+      await tester.tap(find.text('Đóng'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+    }
+    ApiClient.instance = null;
+  });
+}
+
+class RoleMockApiClient extends MockApiClient {
+  final String mockRole;
+  RoleMockApiClient(this.mockRole);
+
+  @override
+  Future<Map<String, dynamic>> login({
+    required String identifier,
+    required String password,
+  }) async {
+    final res = await super.login(identifier: identifier, password: password);
+    res['role'] = mockRole;
+    return res;
+  }
 }

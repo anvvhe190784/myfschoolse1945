@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import vn.edu.fpt.fschool.model.User;
+import vn.edu.fpt.fschool.repository.ClassEnrollmentRepository;
 import vn.edu.fpt.fschool.repository.ParentStudentRepository;
 
 /**
@@ -15,12 +16,14 @@ import vn.edu.fpt.fschool.repository.ParentStudentRepository;
 public class StudentAccessResolver {
 
   private final ParentStudentRepository parentStudentRepository;
+  private final ClassEnrollmentRepository classEnrollmentRepository;
 
   /**
-   * Giải quyết studentId mục tiêu dựa trên vai trò của người dùng hiện tại: - STUDENT: Luôn trả về
-   * userId của chính mình (chặn IDOR/xem trộm). - PARENT: Bắt buộc truyền requestedStudentId và
-   * phải có quan hệ trong bảng parent_students. - ADMIN / LECTURER: Trả về requestedStudentId nếu
-   * có.
+   * Giải quyết studentId mục tiêu dựa trên vai trò của người dùng hiện tại:
+   * - STUDENT: Luôn trả về userId của chính mình (chặn IDOR/xem trộm).
+   * - PARENT: Bắt buộc truyền requestedStudentId và phải có quan hệ trong bảng parent_students.
+   * - LECTURER: Trả về requestedStudentId nếu sinh viên thuộc lớp giảng viên phụ trách.
+   * - ADMIN: Trả về requestedStudentId nếu có.
    */
   public Long resolveTargetStudentId(User currentUser, Long requestedStudentId) {
     if (currentUser == null) {
@@ -49,7 +52,21 @@ public class StudentAccessResolver {
       return requestedStudentId;
     }
 
-    // Với ADMIN hoặc LECTURER
+    if ("LECTURER".equals(role)) {
+      if (requestedStudentId != null) {
+        boolean taughtByLecturer =
+            classEnrollmentRepository
+                .existsByStudent_UserIdAndClassEntity_Lecturer_UserIdAndStatus(
+                    requestedStudentId, currentUser.getUserId(), "ENROLLED");
+        if (!taughtByLecturer) {
+          throw new AccessDeniedException("Sinh viên không thuộc lớp bạn phụ trách");
+        }
+        return requestedStudentId;
+      }
+      return currentUser.getUserId();
+    }
+
+    // Với ADMIN hoặc các vai trò quản trị khác
     if (requestedStudentId != null) {
       return requestedStudentId;
     }

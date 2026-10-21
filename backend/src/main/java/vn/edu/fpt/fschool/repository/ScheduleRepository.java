@@ -35,13 +35,45 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
   @EntityGraph(attributePaths = {"classEntity", "classEntity.course", "lecturer"})
   @Query(
+      "SELECT s FROM Schedule s WHERE s.classEntity.classId IN "
+          + "(SELECT ce.classEntity.classId FROM ClassEnrollment ce WHERE ce.student.userId = :studentId AND ce.status = 'ENROLLED') "
+          + "AND s.date BETWEEN :startDate AND :endDate ORDER BY s.date ASC, s.slotNumber ASC")
+  List<Schedule> findByStudentIdAndDateBetween(
+      @Param("studentId") Long studentId,
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate);
+
+  @EntityGraph(attributePaths = {"classEntity", "classEntity.course", "lecturer"})
+  @Query(
       "SELECT s FROM Schedule s WHERE s.lecturer.userId = :lecturerId AND s.date = :date ORDER BY s.slotNumber ASC")
   List<Schedule> findByLecturerIdAndDate(
       @Param("lecturerId") Long lecturerId, @Param("date") LocalDate date);
 
   @EntityGraph(attributePaths = {"classEntity", "classEntity.course", "lecturer"})
   @Query(
+      "SELECT s FROM Schedule s WHERE s.lecturer.userId = :lecturerId AND s.date BETWEEN :startDate AND :endDate ORDER BY s.date ASC, s.slotNumber ASC")
+  List<Schedule> findByLecturerIdAndDateBetween(
+      @Param("lecturerId") Long lecturerId,
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate);
+
+  @EntityGraph(attributePaths = {"classEntity", "classEntity.course", "lecturer"})
+  @Query(
+      "SELECT s FROM Schedule s WHERE s.date BETWEEN :startDate AND :endDate ORDER BY s.date ASC, s.slotNumber ASC")
+  List<Schedule> findByDateBetween(
+      @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+  @EntityGraph(attributePaths = {"classEntity", "classEntity.course", "lecturer"})
+  @Query(
       "SELECT s FROM Schedule s JOIN s.classEntity c WHERE s.date BETWEEN :startDate AND :endDate ORDER BY s.date, s.slotNumber")
   List<Schedule> findSchedulesInRange(
       @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+  @Query("SELECT DISTINCT s.classEntity.semester FROM Schedule s WHERE s.classEntity.semester IS NOT NULL ORDER BY s.classEntity.semester DESC")
+  List<String> findDistinctSemesters();
+
+  boolean existsByClassEntity_ClassIdAndDateAndSlotNumber(
+      Long classId, LocalDate date, Integer slotNumber);
+
+  List<Schedule> findByDateBeforeAndStatus(LocalDate date, String status);
 }

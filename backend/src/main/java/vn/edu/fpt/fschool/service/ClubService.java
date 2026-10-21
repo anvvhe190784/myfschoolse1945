@@ -31,6 +31,9 @@ public class ClubService {
             .findById(id)
             .orElseThrow(
                 () -> new IllegalArgumentException("Không tìm thấy câu lạc bộ với ID: " + id));
+    if (!Boolean.TRUE.equals(club.getIsActive())) {
+      throw new IllegalArgumentException("Câu lạc bộ hiện không hoạt động hoặc không tồn tại");
+    }
     return academicMapper.toClubResponse(club);
   }
 }

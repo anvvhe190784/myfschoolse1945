@@ -179,4 +179,33 @@ class ScheduleSecurityTest {
         AccessDeniedException.class,
         () -> scheduleService.getScheduleDetail(1L, "student@fpt.edu.vn"));
   }
+
+  @Test
+  @DisplayName("Lịch học theo tuần: Sinh viên lấy lịch trong khoảng startDate đến endDate thành công")
+  void getSchedules_studentInRange_shouldQueryStudentSchedulesInRange() {
+    LocalDate start = LocalDate.of(2026, 10, 19);
+    LocalDate end = LocalDate.of(2026, 10, 25);
+    when(userRepository.findByEmailIgnoreCase("student@fpt.edu.vn")).thenReturn(Optional.of(student));
+    when(studentAccessResolver.resolveTargetStudentId(student, null)).thenReturn(101L);
+    when(scheduleRepository.findByStudentIdAndDateBetween(101L, start, end)).thenReturn(List.of(schedule));
+    ScheduleResponse response =
+        new ScheduleResponse(
+            1L, 10L, "SE1945", "PRJ301", "Java Web", 1, 1, start,
+            LocalTime.of(7, 30), LocalTime.of(9, 50), "BE-301", "Mr. Teacher", "Note", "ACTIVE", "Fall2026");
+    when(academicMapper.toScheduleResponseList(List.of(schedule))).thenReturn(List.of(response));
+
+    List<ScheduleResponse> results = scheduleService.getSchedules("student@fpt.edu.vn", start, end, null);
+    assertEquals(1, results.size());
+    assertEquals("Fall2026", results.get(0).semester());
+    verify(scheduleRepository).findByStudentIdAndDateBetween(101L, start, end);
+  }
+
+  @Test
+  @DisplayName("Danh sách kỳ học: Trả về danh sách kỳ học phân biệt từ database")
+  void getSemesters_shouldReturnDistinctSemesters() {
+    when(scheduleRepository.findDistinctSemesters()).thenReturn(List.of("Fall2026", "Summer2026"));
+    List<String> semesters = scheduleService.getSemesters();
+    assertEquals(2, semesters.size());
+    assertEquals("Fall2026", semesters.get(0));
+  }
 }

@@ -68,13 +68,8 @@ public class NotificationService {
   public UnreadCountResponse getUnreadCount(String email) {
     User user = getUserByEmail(email);
     long personalUnread = notificationRepository.countByUserIdAndIsReadFalse(user.getUserId());
-    Set<Long> readBroadcastIds =
-        notificationReadRepository.findReadNotificationIdsByUserId(user.getUserId());
-
     long broadcastCount =
-        notificationRepository.findVisibleNotificationsForUser(user.getUserId()).stream()
-            .filter(n -> n.getUser() == null && !readBroadcastIds.contains(n.getNotificationId()))
-            .count();
+        notificationRepository.countUnreadBroadcastsForUser(user.getUserId());
 
     return new UnreadCountResponse(personalUnread + broadcastCount);
   }
@@ -116,22 +111,23 @@ public class NotificationService {
     User user = getUserByEmail(email);
     int personalCount = notificationRepository.markAllAsReadByUserId(user.getUserId());
 
-    // Mark unread broadcasts as read
-    Set<Long> readBroadcastIds =
-        notificationReadRepository.findReadNotificationIdsByUserId(user.getUserId());
+    // Mark unread broadcasts as read via batch save
     List<Notification> unreadBroadcasts =
-        notificationRepository.findVisibleNotificationsForUser(user.getUserId()).stream()
-            .filter(n -> n.getUser() == null && !readBroadcastIds.contains(n.getNotificationId()))
-            .toList();
+        notificationRepository.findUnreadBroadcastsForUser(user.getUserId());
 
-    for (Notification n : unreadBroadcasts) {
-      NotificationRead nr =
-          NotificationRead.builder()
-              .notification(n)
-              .user(user)
-              .readAt(OffsetDateTime.now(ZoneOffset.UTC))
-              .build();
-      notificationReadRepository.save(nr);
+    if (!unreadBroadcasts.isEmpty()) {
+      OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+      List<NotificationRead> readsToSave =
+          unreadBroadcasts.stream()
+              .map(
+                  n ->
+                      NotificationRead.builder()
+                          .notification(n)
+                          .user(user)
+                          .readAt(now)
+                          .build())
+              .toList();
+      notificationReadRepository.saveAll(readsToSave);
     }
 
     return personalCount + unreadBroadcasts.size();

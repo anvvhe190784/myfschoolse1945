@@ -18,6 +18,8 @@ public class JwtUtils {
 
   private static final String CLAIM_USER_ID = "userId";
   private static final String CLAIM_TOKEN_TYPE = "tokenType";
+  private static final String CLAIM_TOKEN_VERSION = "tokenVersion";
+  private static final String CLAIM_ROLE = "role";
 
   @Value("${jwt.secret}")
   private String jwtSecret;
@@ -39,8 +41,8 @@ public class JwtUtils {
     return Jwts.builder()
         .subject(email)
         .claim(CLAIM_USER_ID, userId)
-        .claim("role", role)
-        .claim("tokenVersion", tokenVersion != null ? tokenVersion : 1)
+        .claim(CLAIM_ROLE, role)
+        .claim(CLAIM_TOKEN_VERSION, tokenVersion != null ? tokenVersion : 1)
         .claim(CLAIM_TOKEN_TYPE, "ACCESS")
         .issuedAt(java.util.Date.from(now))
         .expiration(java.util.Date.from(now.plusMillis(accessTokenExpirationMs)))
@@ -59,6 +61,33 @@ public class JwtUtils {
         .expiration(java.util.Date.from(now.plusMillis(refreshTokenExpirationMs)))
         .signWith(getSigningKey())
         .compact();
+  }
+
+  public java.util.Optional<Claims> parseClaimsSafe(String token) {
+    try {
+      return java.util.Optional.of(parseToken(token));
+    } catch (Exception e) {
+      return java.util.Optional.empty();
+    }
+  }
+
+  public String getTokenType(Claims claims) {
+    return claims != null ? claims.get(CLAIM_TOKEN_TYPE, String.class) : null;
+  }
+
+  public String getRoleFromClaims(Claims claims) {
+    return claims != null ? claims.get(CLAIM_ROLE, String.class) : null;
+  }
+
+  public Integer getTokenVersionFromClaims(Claims claims) {
+    if (claims == null) {
+      return null;
+    }
+    Object version = claims.get(CLAIM_TOKEN_VERSION);
+    if (version instanceof Number number) {
+      return number.intValue();
+    }
+    return null;
   }
 
   public String getTokenType(String token) {
@@ -87,12 +116,12 @@ public class JwtUtils {
   }
 
   public String getRoleFromToken(String token) {
-    return parseToken(token).get("role", String.class);
+    return parseToken(token).get(CLAIM_ROLE, String.class);
   }
 
   public Integer getTokenVersionFromToken(String token) {
     try {
-      Object version = parseToken(token).get("tokenVersion");
+      Object version = parseToken(token).get(CLAIM_TOKEN_VERSION);
       if (version instanceof Number number) {
         return number.intValue();
       }

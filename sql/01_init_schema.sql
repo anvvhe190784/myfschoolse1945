@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     avatar_url TEXT,
     role TEXT NOT NULL DEFAULT 'STUDENT' CHECK (role IN ('STUDENT', 'LECTURER', 'PARENT', 'ADMIN')),
     status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE', 'LOCKED')),
+    must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
     token_version INT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -93,14 +94,16 @@ CREATE TABLE IF NOT EXISTS schedules (
     session_no INT NOT NULL DEFAULT 1 CHECK (session_no > 0), -- SessionNo: 1, 2, 11
     lecturer_id BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
     note TEXT,
-    status TEXT NOT NULL DEFAULT 'UPCOMING' CHECK (status IN ('UPCOMING', 'PRESENT', 'ABSENT', 'CANCELLED')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    status TEXT NOT NULL DEFAULT 'UPCOMING' CHECK (status IN ('UPCOMING', 'PRESENT', 'ABSENT', 'CANCELLED', 'COMPLETED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT uq_schedule_class_date_slot UNIQUE (class_id, date, slot_number)
 );
 
 CREATE INDEX IF NOT EXISTS idx_schedules_class_id ON schedules (class_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_lecturer_id ON schedules (lecturer_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_date ON schedules (date);
 CREATE INDEX IF NOT EXISTS idx_schedules_class_date ON schedules (class_id, date);
+CREATE INDEX IF NOT EXISTS idx_schedules_date_status ON schedules (date, status);
 
 -- 7. GRADES TABLE
 CREATE TABLE IF NOT EXISTS grades (
@@ -112,6 +115,7 @@ CREATE TABLE IF NOT EXISTS grades (
     score NUMERIC(4,2) CHECK (score >= 0 AND score <= 10),
     feedback TEXT,
     status TEXT NOT NULL DEFAULT 'PUBLISHED' CHECK (status IN ('DRAFT', 'PUBLISHED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_student_class_assessment UNIQUE (student_id, class_id, assessment_name)
 );
@@ -128,9 +132,10 @@ CREATE TABLE IF NOT EXISTS requests (
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     attachment_url TEXT,
-    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PROCESSING', 'APPROVED', 'REJECTED')),
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PROCESSING', 'APPROVED', 'REJECTED', 'CANCELLED')),
     handler_id BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
     response_note TEXT,
+    version BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -138,6 +143,7 @@ CREATE TABLE IF NOT EXISTS requests (
 CREATE INDEX IF NOT EXISTS idx_requests_student_id ON requests (student_id);
 CREATE INDEX IF NOT EXISTS idx_requests_requester_id ON requests (requester_id);
 CREATE INDEX IF NOT EXISTS idx_requests_status ON requests (status);
+CREATE INDEX IF NOT EXISTS idx_requests_status_created ON requests (status, created_at);
 
 -- 9. CLUBS TABLE
 CREATE TABLE IF NOT EXISTS clubs (
@@ -214,3 +220,18 @@ CREATE TABLE IF NOT EXISTS notification_reads (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notification_reads_user_id ON notification_reads (user_id);
+
+-- 14. ATTENDANCES TABLE
+CREATE TABLE IF NOT EXISTS attendances (
+    attendance_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    schedule_id BIGINT NOT NULL REFERENCES schedules(schedule_id) ON DELETE CASCADE,
+    student_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'PRESENT' CHECK (status IN ('PRESENT', 'ABSENT', 'LATE')),
+    note TEXT,
+    recorded_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+    recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT uq_schedule_student_attendance UNIQUE (schedule_id, student_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_attendances_schedule ON attendances (schedule_id);
+CREATE INDEX IF NOT EXISTS idx_attendances_student ON attendances (student_id);

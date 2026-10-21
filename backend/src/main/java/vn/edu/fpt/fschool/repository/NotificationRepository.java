@@ -49,6 +49,16 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
   long countByUserIdAndIsReadFalse(@Param("userId") Long userId);
 
   @Query(
+      "SELECT COUNT(n) FROM Notification n WHERE n.user IS NULL AND n.notificationId NOT IN "
+          + "(SELECT nr.notification.notificationId FROM NotificationRead nr WHERE nr.user.userId = :userId)")
+  long countUnreadBroadcastsForUser(@Param("userId") Long userId);
+
+  @Query(
+      "SELECT n FROM Notification n WHERE n.user IS NULL AND n.notificationId NOT IN "
+          + "(SELECT nr.notification.notificationId FROM NotificationRead nr WHERE nr.user.userId = :userId)")
+  List<Notification> findUnreadBroadcastsForUser(@Param("userId") Long userId);
+
+  @Query(
       "SELECT n FROM Notification n LEFT JOIN FETCH n.user WHERE n.notificationId = :notificationId AND (n.user.userId = :userId OR n.user IS NULL)")
   Optional<Notification> findVisibleByIdAndUserId(
       @Param("notificationId") Long notificationId, @Param("userId") Long userId);

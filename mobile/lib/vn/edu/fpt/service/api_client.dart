@@ -46,16 +46,21 @@ class ApiClient {
     FlutterSecureStorage? secureStorage,
   })  : baseUrl = baseUrl ?? _resolveDefaultBaseUrl(),
         _httpClient = (httpClient ?? HttpClient())
-          ..connectionTimeout = const Duration(seconds: 5),
+          ..connectionTimeout = const Duration(seconds: 5)
+          ..idleTimeout = const Duration(seconds: 15),
         _secureStorage = secureStorage ??
             const FlutterSecureStorage(
               aOptions: AndroidOptions(
-                encryptedSharedPreferences: false,
+                encryptedSharedPreferences: true,
                 resetOnError: true,
               ),
             );
 
   static String _resolveDefaultBaseUrl() {
+    const envUrl = String.fromEnvironment('API_BASE_URL');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
     if (kIsWeb) {
       return 'http://localhost:8080/api/v1';
     }
@@ -281,8 +286,8 @@ class ApiClient {
       request.headers.set(key, value);
     });
 
-    final response = await request.close();
-    final body = await response.transform(utf8.decoder).join();
+    final response = await request.close().timeout(const Duration(seconds: 15));
+    final body = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 401 && !isRetry && !path.contains(_authPathSegment)) {
       final refreshed = await refreshAccessToken();
@@ -307,8 +312,8 @@ class ApiClient {
       request.write(jsonBody);
     }
 
-    final response = await request.close();
-    final bodyStr = await response.transform(utf8.decoder).join();
+    final response = await request.close().timeout(const Duration(seconds: 15));
+    final bodyStr = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 401 && !isRetry && !path.contains(_authPathSegment)) {
       final refreshed = await refreshAccessToken();
@@ -333,8 +338,8 @@ class ApiClient {
       request.write(jsonBody);
     }
 
-    final response = await request.close();
-    final bodyStr = await response.transform(utf8.decoder).join();
+    final response = await request.close().timeout(const Duration(seconds: 15));
+    final bodyStr = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 401 && !isRetry && !path.contains(_authPathSegment)) {
       final refreshed = await refreshAccessToken();
@@ -508,11 +513,30 @@ class ApiClient {
   }
 
   /// GET /api/v1/schedules
-  Future<List<dynamic>> getSchedules({String? date}) async {
-    final query = date != null ? {'date': date} : null;
-    final result = await get('/schedules', queryParams: query);
+  Future<List<dynamic>> getSchedules({
+    String? date,
+    String? startDate,
+    String? endDate,
+    int? studentId,
+  }) async {
+    final query = <String, dynamic>{};
+    if (date != null) query['date'] = date;
+    if (startDate != null) query['startDate'] = startDate;
+    if (endDate != null) query['endDate'] = endDate;
+    if (studentId != null) query['studentId'] = studentId;
+
+    final result = await get('/schedules', queryParams: query.isNotEmpty ? query : null);
     if (result is List) {
       return result;
+    }
+    return [];
+  }
+
+  /// GET /api/v1/schedules/semesters
+  Future<List<String>> getSemesters() async {
+    final result = await get('/schedules/semesters');
+    if (result is List) {
+      return result.map((e) => e.toString()).toList();
     }
     return [];
   }

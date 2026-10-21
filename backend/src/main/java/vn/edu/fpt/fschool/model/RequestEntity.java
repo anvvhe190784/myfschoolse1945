@@ -10,6 +10,7 @@ import lombok.Setter;
 @Table(name = "requests")
 @Getter
 @Setter
+@SuppressWarnings("JpaDataSourceORMInspection")
 public class RequestEntity {
 
   @Id
@@ -48,6 +49,10 @@ public class RequestEntity {
 
   @Column(name = "response_note", columnDefinition = "TEXT")
   private String responseNote;
+
+  @Version
+  @Column(name = "version", nullable = false)
+  private Long version = 0L;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   private OffsetDateTime createdAt;

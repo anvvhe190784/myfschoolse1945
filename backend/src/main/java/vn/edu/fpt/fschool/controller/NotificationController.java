@@ -26,7 +26,7 @@ public class NotificationController {
       @RequestParam(defaultValue = "10") int size,
       @RequestParam(defaultValue = "false") boolean unreadOnly) {
     String email = authentication.getName();
-    Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size));
+    Pageable pageable = PageRequest.of(Math.max(0, page), Math.clamp(size, 1, 50));
     return ResponseEntity.ok(notificationService.getNotifications(email, pageable, unreadOnly));
   }
 

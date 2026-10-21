@@ -1,6 +1,9 @@
 package vn.edu.fpt.fschool.service;
 
+import java.time.Duration;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.fpt.fschool.dto.RequestDtos.*;
@@ -16,16 +19,28 @@ public class RequestService {
   private final UserRepository userRepository;
   private final StudentAccessResolver studentAccessResolver;
   private final vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper;
+  private final StringRedisTemplate stringRedisTemplate;
 
   public RequestService(
       RequestRepository requestRepository,
       UserRepository userRepository,
       StudentAccessResolver studentAccessResolver,
       vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper) {
+    this(requestRepository, userRepository, studentAccessResolver, academicMapper, null);
+  }
+
+  @Autowired
+  public RequestService(
+      RequestRepository requestRepository,
+      UserRepository userRepository,
+      StudentAccessResolver studentAccessResolver,
+      vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper,
+      @Autowired(required = false) StringRedisTemplate stringRedisTemplate) {
     this.requestRepository = requestRepository;
     this.userRepository = userRepository;
     this.studentAccessResolver = studentAccessResolver;
     this.academicMapper = academicMapper;
+    this.stringRedisTemplate = stringRedisTemplate;
   }
 
   @Transactional(readOnly = true)
@@ -45,6 +60,23 @@ public class RequestService {
         userRepository
             .findByEmailIgnoreCase(email)
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+
+    // Anti double-submit / Idempotency protection (5 seconds window)
+    if (stringRedisTemplate != null) {
+      String idempotencyKey =
+          "idempotency:request:"
+              + requester.getUserId()
+              + ":"
+              + dto.requestType()
+              + ":"
+              + dto.title().trim().toLowerCase();
+      Boolean isNew =
+          stringRedisTemplate.opsForValue().setIfAbsent(idempotencyKey, "1", Duration.ofSeconds(5));
+      if (Boolean.FALSE.equals(isNew)) {
+        throw new IllegalStateException(
+            "Yêu cầu gửi đơn của bạn đang được xử lý. Vui lòng không nhấn gửi liên tiếp.");
+      }
+    }
 
     Long targetStudentId = studentAccessResolver.resolveTargetStudentId(requester, dto.studentId());
     User student =

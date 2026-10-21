@@ -42,6 +42,7 @@ import vn.edu.fpt.fschool.repository.NewsRepository;
 import vn.edu.fpt.fschool.repository.RequestRepository;
 import vn.edu.fpt.fschool.repository.ScheduleRepository;
 import vn.edu.fpt.fschool.repository.UserRepository;
+import vn.edu.fpt.fschool.util.PostCommitExecutor;
 
 @ExtendWith(MockitoExtension.class)
 class CoreAndSecurityAuditTest {
@@ -88,7 +89,10 @@ class CoreAndSecurityAuditTest {
             passwordEncoder,
             userMapper,
             academicMapper,
-            eventPublisher);
+            eventPublisher,
+            tokenVersionService,
+            refreshTokenService,
+            new PostCommitExecutor());
 
     newsService =
         new NewsService(newsRepository, userRepository, eventPublisher, stringRedisTemplate);
@@ -103,7 +107,8 @@ class CoreAndSecurityAuditTest {
             refreshTokenService,
             tokenVersionService,
             stringRedisTemplate,
-            eventPublisher);
+            eventPublisher,
+            new PostCommitExecutor());
   }
 
   // --- LỖI #2: STATE MACHINE CHO DUYỆT ĐƠN TỪ ---

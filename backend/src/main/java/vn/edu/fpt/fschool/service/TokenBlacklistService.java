@@ -68,10 +68,12 @@ public class TokenBlacklistService {
         Boolean hasKey = stringRedisTemplate.hasKey(key);
         return Boolean.TRUE.equals(hasKey);
       } catch (Exception ex) {
-        log.error("Lỗi kiểm tra Redis blacklist: {}", ex.getMessage());
-        return false;
+        log.error(
+            "Lỗi kiểm tra Redis blacklist (Fail-closed: từ chối token): {}", ex.getMessage());
+        return true;
       }
     }
-    return false;
+    log.error("StringRedisTemplate không khả dụng (Fail-closed: từ chối token)");
+    return true;
   }
 }

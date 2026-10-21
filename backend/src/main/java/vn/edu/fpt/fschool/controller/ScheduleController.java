@@ -23,12 +23,24 @@ public class ScheduleController {
   public ResponseEntity<List<ScheduleResponse>> getSchedules(
       Authentication authentication,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
       @RequestParam(required = false) Long studentId) {
     String email = (authentication != null) ? authentication.getName() : null;
+    LocalDate start = (startDate != null) ? startDate : date;
+    LocalDate end = (endDate != null) ? endDate : date;
     if (email != null) {
-      return ResponseEntity.ok(scheduleService.getSchedules(email, date, studentId));
+      return ResponseEntity.ok(scheduleService.getSchedules(email, start, end, studentId));
     }
-    return ResponseEntity.ok(scheduleService.getSchedules(date));
+    if (start != null && end != null) {
+      return ResponseEntity.ok(scheduleService.getSchedules(start, end));
+    }
+    return ResponseEntity.ok(scheduleService.getSchedules(start));
+  }
+
+  @GetMapping("/semesters")
+  public ResponseEntity<List<String>> getSemesters() {
+    return ResponseEntity.ok(scheduleService.getSemesters());
   }
 
   @GetMapping("/{id}")

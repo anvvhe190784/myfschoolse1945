@@ -23,6 +23,7 @@ import vn.edu.fpt.fschool.dto.AuthDtos.ResetPasswordRequest;
 import vn.edu.fpt.fschool.event.NotificationEvents.PasswordChangedEvent;
 import vn.edu.fpt.fschool.model.User;
 import vn.edu.fpt.fschool.repository.UserRepository;
+import vn.edu.fpt.fschool.util.PostCommitExecutor;
 
 @ExtendWith(MockitoExtension.class)
 class AuthSecurityTest {
@@ -61,7 +62,8 @@ class AuthSecurityTest {
             refreshTokenService,
             tokenVersionService,
             stringRedisTemplate,
-            eventPublisher);
+            eventPublisher,
+            new PostCommitExecutor());
   }
 
   @Test
@@ -103,58 +105,60 @@ class AuthSecurityTest {
   }
 
   @Test
-  @DisplayName("Bảo mật: Từ chối đặt lại mật khẩu nếu mã OTP không khớp (Chống Account Takeover)")
-  void resetPassword_shouldReject_whenOtpDoesNotMatch() {
-    when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.get("otp:reset:victim@fpt.edu.vn")).thenReturn("654321");
-
+  @DisplayName("Bảo mật: Từ chối đặt lại mật khẩu nếu thiếu resetToken hợp lệ (Chống bypass OTP)")
+  void resetPassword_shouldReject_whenResetTokenIsMissing() {
     ResetPasswordRequest request =
-        new ResetPasswordRequest(
-            "victim@fpt.edu.vn",
-            "999999", // Sai OTP
-            "NewPassword123!");
+        new ResetPasswordRequest(null, "NewPassword123!");
 
     IllegalArgumentException ex =
         assertThrows(IllegalArgumentException.class, () -> authService.resetPassword(request));
-    assertTrue(ex.getMessage().contains("Mã xác thực OTP không chính xác"));
+    assertTrue(ex.getMessage().contains("Token đặt lại mật khẩu không được để trống"));
     verify(userRepository, never()).save(any());
   }
 
   @Test
-  @DisplayName("Bảo mật: Từ chối đặt lại mật khẩu nếu mã OTP đã hết hạn")
-  void resetPassword_shouldReject_whenOtpIsExpired() {
+  @DisplayName("Bảo mật: Từ chối đặt lại mật khẩu nếu resetToken không hợp lệ hoặc đã hết hạn")
+  void resetPassword_shouldReject_whenResetTokenIsExpiredOrInvalid() {
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.get("otp:reset:victim@fpt.edu.vn"))
-        .thenReturn(null); // Đã hết hạn trong Redis
+    when(valueOperations.getAndDelete("otp:token:invalid-or-expired-token"))
+        .thenReturn(null); // Đã hết hạn hoặc không tồn tại trong Redis
 
     ResetPasswordRequest request =
-        new ResetPasswordRequest("victim@fpt.edu.vn", "123456", "NewPassword123!");
+        new ResetPasswordRequest("invalid-or-expired-token", "NewPassword123!");
 
     IllegalArgumentException ex =
         assertThrows(IllegalArgumentException.class, () -> authService.resetPassword(request));
-    assertTrue(ex.getMessage().contains("Mã xác thực OTP đã hết hạn"));
+    assertTrue(ex.getMessage().contains("Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn"));
     verify(userRepository, never()).save(any());
   }
 
   @Test
-  @DisplayName("Thành công: Đặt lại mật khẩu thành công khi OTP đúng và còn hiệu lực")
-  void resetPassword_shouldSucceed_whenOtpIsValid() {
-    User user = User.builder().userId(1L).email("user@fpt.edu.vn").build();
+  @DisplayName("Thành công: Đặt lại mật khẩu thành công khi resetToken hợp lệ")
+  void resetPassword_shouldSucceed_whenResetTokenIsValid() {
+    User user =
+        User.builder()
+            .userId(1L)
+            .email("user@fpt.edu.vn")
+            .mustChangePassword(true)
+            .tokenVersion(1)
+            .build();
 
     when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.get("otp:reset:user@fpt.edu.vn")).thenReturn("123456");
+    when(valueOperations.getAndDelete("otp:token:valid-reset-token"))
+        .thenReturn("user@fpt.edu.vn");
     when(userRepository.findByEmailIgnoreCase("user@fpt.edu.vn")).thenReturn(Optional.of(user));
     when(passwordEncoder.encode("NewPassword123!")).thenReturn("hashedPassword");
 
     ResetPasswordRequest request =
-        new ResetPasswordRequest("user@fpt.edu.vn", "123456", "NewPassword123!");
+        new ResetPasswordRequest("valid-reset-token", "NewPassword123!");
 
     var response = authService.resetPassword(request);
     assertTrue(response.success());
     assertEquals("hashedPassword", user.getPasswordHash());
+    assertFalse(user.getMustChangePassword());
     assertEquals(2, user.getTokenVersion());
     verify(userRepository, times(1)).save(user);
-    verify(stringRedisTemplate, times(1)).delete("otp:reset:user@fpt.edu.vn");
+    verify(stringRedisTemplate, times(1)).delete("otp:cooldown:user@fpt.edu.vn");
     verify(eventPublisher, times(1)).publishEvent(any(PasswordChangedEvent.class));
   }
 
@@ -282,6 +286,20 @@ class AuthSecurityTest {
     assertEquals("mock-refresh-token", response.refreshToken());
     assertEquals("mock-access-token", response.token()); // Backwards compat
     assertEquals("Bearer", response.tokenType());
+  }
+
+  @Test
+  @DisplayName("Login: Đăng nhập bằng mã số/roll number bị từ chối, chỉ chấp nhận email")
+  void login_shouldRejectRollNumber_andOnlyAllowEmail() {
+    when(userRepository.findByEmailIgnoreCase("GV001")).thenReturn(Optional.empty());
+
+    var request = new vn.edu.fpt.fschool.dto.AuthDtos.LoginRequest("GV001", "123456");
+
+    var ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> authService.login(request));
+    assertEquals("Tài khoản hoặc mật khẩu không chính xác", ex.getMessage());
   }
 
   @Test

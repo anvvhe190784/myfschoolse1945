@@ -3,6 +3,7 @@ import 'package:myfschoolse1945/vn/edu/fpt/controller/account_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/controller/home_controller.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/account_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/screen/notification_screen.dart';
+import 'package:myfschoolse1945/vn/edu/fpt/screen/schedule_screen.dart';
 import 'package:myfschoolse1945/vn/edu/fpt/widget/bounce_tap.dart';
 
 
@@ -375,6 +376,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMenuItem(FeatureMenuItem item) {
     return BounceTap(
       onTap: () {
+        if (item.title == 'Lịch học') {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ScheduleScreen()),
+          );
+          return;
+        }
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

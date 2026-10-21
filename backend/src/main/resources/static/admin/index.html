@@ -173,11 +173,11 @@
                 <!-- User Profile Trigger & Dropdown -->
                 <div class="user-profile-menu-container">
                     <button class="user-profile-btn" id="user-profile-btn" aria-expanded="false" aria-haspopup="true">
-                        <div class="user-avatar" id="current-user-avatar">A</div>
-                        <div class="user-details">
+                        <span class="user-avatar" id="current-user-avatar">A</span>
+                        <span class="user-details">
                             <span class="user-name" id="current-user-name">Quản Trị Viên</span>
                             <span class="user-role" id="current-user-role">Admin</span>
-                        </div>
+                        </span>
                         <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
@@ -437,7 +437,7 @@
                                         <span class="progress-pct" id="progress-requests-pct">0%</span>
                                     </div>
                                     <div class="progress-track">
-                                        <div class="progress-fill fill-blue" id="progress-requests-fill" style="width: 0%;"></div>
+                                        <div class="progress-fill fill-blue" id="progress-requests-fill" style="width: 0;"></div>
                                     </div>
                                 </div>
 
@@ -447,7 +447,7 @@
                                         <span class="progress-pct" id="progress-active-pct">0%</span>
                                     </div>
                                     <div class="progress-track">
-                                        <div class="progress-fill fill-amber" id="progress-active-fill" style="width: 0%;"></div>
+                                        <div class="progress-fill fill-amber" id="progress-active-fill" style="width: 0;"></div>
                                     </div>
                                 </div>
 
@@ -457,7 +457,7 @@
                                         <span class="progress-pct" id="progress-classes-pct">0%</span>
                                     </div>
                                     <div class="progress-track">
-                                        <div class="progress-fill fill-purple" id="progress-classes-fill" style="width: 0%;"></div>
+                                        <div class="progress-fill fill-purple" id="progress-classes-fill" style="width: 0;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -914,8 +914,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="class-teacher-id">ID Giáo Viên Phụ Trách *</label>
-                    <input class="form-control" id="class-teacher-id" placeholder="Nhập ID giảng viên" required type="number">
+                    <label class="form-label" for="class-teacher-id">ID Giáo Viên Phụ Trách</label>
+                    <input class="form-control" id="class-teacher-id" placeholder="Nhập ID giảng viên (tùy chọn)" type="number">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="class-semester">Học Kỳ *</label>

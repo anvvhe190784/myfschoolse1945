@@ -72,6 +72,10 @@ public class NewsService {
             .orElseThrow(
                 () -> new IllegalArgumentException("Không tìm thấy tin tức với ID: " + id));
 
+    if (!Boolean.TRUE.equals(news.getIsPublished())) {
+      throw new IllegalArgumentException("Tin tức chưa được xuất bản hoặc không tồn tại");
+    }
+
     long pendingViews;
     if (stringRedisTemplate != null) {
       try {
@@ -110,7 +114,7 @@ public class NewsService {
     News news = new News();
     news.setTitle(req.title().trim());
     news.setSummary(req.summary().trim());
-    news.setContent(req.content().trim());
+    news.setContent(sanitizeContent(req.content().trim()));
     news.setThumbnailUrl(req.thumbnailUrl());
     news.setAuthor(admin);
     news.setCategory(
@@ -131,6 +135,11 @@ public class NewsService {
     return toResponse(saved);
   }
 
+  @Transactional
+  public void updateViewsInDb(long newsId, long count) {
+    newsRepository.incrementViewsCount(newsId, count);
+  }
+
   private NewsResponse toResponse(News n) {
     return toResponseWithViews(n, n.getViewsCount() != null ? n.getViewsCount() : 0);
   }
@@ -147,5 +156,24 @@ public class NewsService {
         n.getCategory(),
         views,
         n.getPublishedAt());
+  }
+
+  private static final java.util.regex.Pattern SCRIPT_BLOCK_PATTERN =
+      java.util.regex.Pattern.compile("<script[^>]*>.*?</script>", java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.DOTALL);
+  private static final java.util.regex.Pattern SCRIPT_TAG_PATTERN =
+      java.util.regex.Pattern.compile("<script[^>]*>", java.util.regex.Pattern.CASE_INSENSITIVE);
+  private static final java.util.regex.Pattern JAVASCRIPT_PROTOCOL_PATTERN =
+      java.util.regex.Pattern.compile("javascript:", java.util.regex.Pattern.CASE_INSENSITIVE);
+  private static final java.util.regex.Pattern EVENT_HANDLER_PATTERN =
+      java.util.regex.Pattern.compile("\\bon\\w+\\s*=", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+  private String sanitizeContent(String rawContent) {
+    if (rawContent == null) {
+      return "";
+    }
+    String sanitized = SCRIPT_BLOCK_PATTERN.matcher(rawContent).replaceAll("");
+    sanitized = SCRIPT_TAG_PATTERN.matcher(sanitized).replaceAll("");
+    sanitized = JAVASCRIPT_PROTOCOL_PATTERN.matcher(sanitized).replaceAll("");
+    return EVENT_HANDLER_PATTERN.matcher(sanitized).replaceAll("data-disabled=");
   }
 }

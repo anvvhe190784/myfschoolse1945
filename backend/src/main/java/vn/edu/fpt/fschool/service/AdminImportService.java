@@ -6,18 +6,29 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.edu.fpt.fschool.dto.ImportDtos.ImportResultDto;
 import vn.edu.fpt.fschool.model.ClassEnrollment;
@@ -44,7 +55,12 @@ public class AdminImportService {
           4, new LocalTime[] {LocalTime.of(15, 20), LocalTime.of(17, 40)},
           5, new LocalTime[] {LocalTime.of(17, 50), LocalTime.of(20, 10)},
           6, new LocalTime[] {LocalTime.of(20, 20), LocalTime.of(22, 40)});
+  public static final int MAX_IMPORT_ROWS = 2000;
   private static final String MSG_EMPTY_FILE = "Tệp rỗng hoặc không có dữ liệu";
+  private static final String MSG_EXCEEDED_ROWS = "Tệp vượt quá số dòng cho phép (tối đa " + MAX_IMPORT_ROWS + " dòng)";
+  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+  private static final String TEMP_PASSWORD_CHARS =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
   private final UserRepository userRepository;
   private final ClassRepository classRepository;
   private final ClassEnrollmentRepository classEnrollmentRepository;
@@ -65,24 +81,27 @@ public class AdminImportService {
     return row == null || row.isEmpty() || row.stream().allMatch(String::isBlank);
   }
 
-  @Transactional
   public ImportResultDto importUsers(MultipartFile file) {
     List<List<String>> rows = parseFileRows(file);
     if (rows.isEmpty()) {
       return ImportResultDto.of(0, 0, List.of(MSG_EMPTY_FILE));
     }
+    if (rows.size() - 1 > MAX_IMPORT_ROWS) {
+      return ImportResultDto.of(rows.size() - 1, 0, List.of(MSG_EXCEEDED_ROWS));
+    }
 
     // Row 0 is header: rollNumber, email, fullName, phoneNumber, role, status
     List<String> errors = new ArrayList<>();
     List<User> toSave = new ArrayList<>();
-    String defaultPasswordHash = passwordEncoder.encode("123456");
+    Set<String> seenEmails = new HashSet<>();
+    Set<String> seenRollNumbers = new HashSet<>();
 
     for (int i = 1; i < rows.size(); i++) {
       List<String> row = rows.get(i);
       if (isRowEmpty(row)) {
         continue;
       }
-      processUserRow(row, i + 1, toSave, errors, defaultPasswordHash);
+      processUserRow(row, i + 1, toSave, errors, seenEmails, seenRollNumbers);
     }
 
     if (!toSave.isEmpty()) {
@@ -98,7 +117,8 @@ public class AdminImportService {
       int lineNum,
       List<User> toSave,
       List<String> errors,
-      String defaultPasswordHash) {
+      Set<String> seenEmails,
+      Set<String> seenRollNumbers) {
     String rollNumber = getCell(row, 0);
     String email = getCell(row, 1);
     String fullName = getCell(row, 2);
@@ -114,24 +134,38 @@ public class AdminImportService {
       errors.add(lineError(lineNum, "Họ và tên không được để trống"));
       return;
     }
-    if (userRepository.existsByEmail(email)) {
+    String lowerEmail = email.toLowerCase();
+    if (seenEmails.contains(lowerEmail) || userRepository.existsByEmail(email)) {
       errors.add(lineError(lineNum, "Email " + email + " đã tồn tại trong hệ thống"));
       return;
     }
-    if (!rollNumber.isBlank() && userRepository.existsByRollNumber(rollNumber)) {
+    if (!rollNumber.isBlank()
+        && (seenRollNumbers.contains(rollNumber) || userRepository.existsByRollNumber(rollNumber))) {
       errors.add(lineError(lineNum, "Mã số " + rollNumber + " đã tồn tại"));
       return;
     }
+    seenEmails.add(lowerEmail);
+    if (!rollNumber.isBlank()) {
+      seenRollNumbers.add(rollNumber);
+    }
+
+    StringBuilder tempPassword = new StringBuilder(10);
+    for (int idx = 0; idx < 10; idx++) {
+      tempPassword.append(
+          TEMP_PASSWORD_CHARS.charAt(SECURE_RANDOM.nextInt(TEMP_PASSWORD_CHARS.length())));
+    }
+    String randomPasswordHash = passwordEncoder.encode(tempPassword.toString());
 
     User user =
         User.builder()
             .rollNumber(rollNumber.isBlank() ? null : rollNumber)
             .email(email.toLowerCase())
-            .passwordHash(defaultPasswordHash)
+            .passwordHash(randomPasswordHash)
             .fullName(fullName)
             .phoneNumber(phone.isBlank() ? null : phone)
             .role(role)
             .status(status)
+            .mustChangePassword(true)
             .tokenVersion(1)
             .avatarUrl(
                 "https://api.dicebear.com/7.x/avataaars/svg?seed="
@@ -141,11 +175,13 @@ public class AdminImportService {
     toSave.add(user);
   }
 
-  @Transactional
   public ImportResultDto importGrades(MultipartFile file) {
     List<List<String>> rows = parseFileRows(file);
     if (rows.isEmpty()) {
       return ImportResultDto.of(0, 0, List.of(MSG_EMPTY_FILE));
+    }
+    if (rows.size() - 1 > MAX_IMPORT_ROWS) {
+      return ImportResultDto.of(rows.size() - 1, 0, List.of(MSG_EXCEEDED_ROWS));
     }
 
     // Header: rollNumber, classCode, assessmentName, weight, score, feedback, status
@@ -225,11 +261,13 @@ public class AdminImportService {
     toSave.add(grade);
   }
 
-  @Transactional
   public ImportResultDto importSchedules(MultipartFile file) {
     List<List<String>> rows = parseFileRows(file);
     if (rows.isEmpty()) {
       return ImportResultDto.of(0, 0, List.of(MSG_EMPTY_FILE));
+    }
+    if (rows.size() - 1 > MAX_IMPORT_ROWS) {
+      return ImportResultDto.of(rows.size() - 1, 0, List.of(MSG_EXCEEDED_ROWS));
     }
 
     // Header: classCode, courseCode, date, slotNumber, room, sessionNo, note, status
@@ -298,6 +336,15 @@ public class AdminImportService {
         SLOT_TIMES.getOrDefault(slot, new LocalTime[] {LocalTime.of(7, 30), LocalTime.of(9, 50)});
 
     ClassEntity classEntity = classOpt.get();
+    if (scheduleRepository.existsByClassEntity_ClassIdAndDateAndSlotNumber(
+        classEntity.getClassId(), date, slot)) {
+      errors.add(
+          lineError(
+              lineNum,
+              "Lớp " + classCode + " đã có lịch học vào ngày " + dateStr + " (Slot " + slot + ")"));
+      return;
+    }
+
     Schedule schedule = new Schedule();
     schedule.setClassEntity(classEntity);
     schedule.setDate(date);
@@ -313,11 +360,13 @@ public class AdminImportService {
     toSave.add(schedule);
   }
 
-  @Transactional
   public ImportResultDto importEnrollments(MultipartFile file) {
     List<List<String>> rows = parseFileRows(file);
     if (rows.isEmpty()) {
       return ImportResultDto.of(0, 0, List.of(MSG_EMPTY_FILE));
+    }
+    if (rows.size() - 1 > MAX_IMPORT_ROWS) {
+      return ImportResultDto.of(rows.size() - 1, 0, List.of(MSG_EXCEEDED_ROWS));
     }
 
     // Header: rollNumber, classCode, courseCode, status

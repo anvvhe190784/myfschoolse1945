@@ -30,8 +30,12 @@ public class AdminAcademicController {
   }
 
   @GetMapping("/courses")
-  public ResponseEntity<List<CourseResponse>> getAllCourses() {
-    return ResponseEntity.ok(adminService.getAllCourses());
+  public ResponseEntity<List<CourseResponse>> getAllCourses(
+      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    int safeSize = Math.clamp(size, 1, 50);
+    return ResponseEntity.ok(
+        adminService.getAllCourses(
+            org.springframework.data.domain.PageRequest.of(Math.max(0, page), safeSize)));
   }
 
   @PostMapping("/classes")
@@ -40,8 +44,12 @@ public class AdminAcademicController {
   }
 
   @GetMapping("/classes")
-  public ResponseEntity<List<ClassResponse>> getAllClasses() {
-    return ResponseEntity.ok(adminService.getAllClasses());
+  public ResponseEntity<List<ClassResponse>> getAllClasses(
+      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    int safeSize = Math.clamp(size, 1, 50);
+    return ResponseEntity.ok(
+        adminService.getAllClasses(
+            org.springframework.data.domain.PageRequest.of(Math.max(0, page), safeSize)));
   }
 
   @GetMapping("/students/{id}/classes")
@@ -57,8 +65,12 @@ public class AdminAcademicController {
   }
 
   @GetMapping("/requests")
-  public ResponseEntity<List<vn.edu.fpt.fschool.dto.RequestDtos.RequestResponse>> getAllRequests() {
-    return ResponseEntity.ok(adminService.getAllRequests());
+  public ResponseEntity<List<vn.edu.fpt.fschool.dto.RequestDtos.RequestResponse>> getAllRequests(
+      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    int safeSize = Math.clamp(size, 1, 50);
+    return ResponseEntity.ok(
+        adminService.getAllRequests(
+            org.springframework.data.domain.PageRequest.of(Math.max(0, page), safeSize)));
   }
 
   @PatchMapping("/requests/{id}/process")

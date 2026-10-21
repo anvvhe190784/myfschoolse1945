@@ -12,6 +12,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SuppressWarnings("JpaDataSourceORMInspection")
 public class User {
 
   @Id
@@ -25,6 +26,7 @@ public class User {
   @Column(name = "email", nullable = false, unique = true)
   private String email;
 
+  @com.fasterxml.jackson.annotation.JsonIgnore
   @Column(name = "password_hash", nullable = false)
   private String passwordHash;
 
@@ -43,6 +45,10 @@ public class User {
   @Column(name = "status", nullable = false)
   private String status; // 'ACTIVE', 'INACTIVE', 'LOCKED'
 
+  @Column(name = "must_change_password", nullable = false)
+  @Builder.Default
+  private Boolean mustChangePassword = false;
+
   @Column(name = "token_version", nullable = false)
   @Builder.Default
   private Integer tokenVersion = 1;
@@ -60,6 +66,7 @@ public class User {
     if (status == null) status = "ACTIVE";
     if (role == null) role = "STUDENT";
     if (tokenVersion == null) tokenVersion = 1;
+    if (mustChangePassword == null) mustChangePassword = false;
   }
 
   @PreUpdate

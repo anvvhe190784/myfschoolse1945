@@ -3,6 +3,7 @@ package vn.edu.fpt.fschool.service;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +14,7 @@ import vn.edu.fpt.fschool.dto.AuthDtos.*;
 import vn.edu.fpt.fschool.event.NotificationEvents.PasswordChangedEvent;
 import vn.edu.fpt.fschool.model.User;
 import vn.edu.fpt.fschool.repository.UserRepository;
+import vn.edu.fpt.fschool.util.PostCommitExecutor;
 
 @Service
 public class AuthService {
@@ -36,7 +38,9 @@ public class AuthService {
   private final TokenVersionService tokenVersionService;
   private final StringRedisTemplate stringRedisTemplate;
   private final ApplicationEventPublisher eventPublisher;
+  private final PostCommitExecutor postCommitExecutor;
 
+  @Autowired
   public AuthService(
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
@@ -46,7 +50,8 @@ public class AuthService {
       RefreshTokenService refreshTokenService,
       TokenVersionService tokenVersionService,
       StringRedisTemplate stringRedisTemplate,
-      ApplicationEventPublisher eventPublisher) {
+      ApplicationEventPublisher eventPublisher,
+      PostCommitExecutor postCommitExecutor) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtUtils = jwtUtils;
@@ -56,15 +61,15 @@ public class AuthService {
     this.tokenVersionService = tokenVersionService;
     this.stringRedisTemplate = stringRedisTemplate;
     this.eventPublisher = eventPublisher;
+    this.postCommitExecutor = postCommitExecutor;
   }
 
   @Transactional(readOnly = true)
   public LoginResponse login(LoginRequest req) {
-    String identifier = req.identifier().trim();
+    String email = req.identifier().trim();
     User user =
         userRepository
-            .findByEmailIgnoreCase(identifier)
-            .or(() -> userRepository.findByRollNumber(identifier))
+            .findByEmailIgnoreCase(email)
             .orElseThrow(
                 () -> new IllegalArgumentException("Tài khoản hoặc mật khẩu không chính xác"));
 
@@ -96,7 +101,8 @@ public class AuthService {
         user.getRollNumber(),
         user.getEmail(),
         user.getFullName(),
-        user.getRole());
+        user.getRole(),
+        user.getMustChangePassword());
   }
 
   @Transactional(readOnly = true)
@@ -234,34 +240,17 @@ public class AuthService {
 
   @Transactional
   public MessageResponse resetPassword(ResetPasswordRequest req) {
-    String targetEmail = null;
+    if (req.resetToken() == null || req.resetToken().isBlank()) {
+      throw new IllegalArgumentException("Token đặt lại mật khẩu không được để trống");
+    }
 
-    if (req.resetToken() != null && !req.resetToken().isBlank()) {
-      // Xác thực bằng One-Time Reset Token (atomic getAndDelete)
-      targetEmail =
-          stringRedisTemplate
-              .opsForValue()
-              .getAndDelete(RESET_TOKEN_PREFIX + req.resetToken().trim());
-      if (targetEmail == null) {
-        throw new IllegalArgumentException("Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
-      }
-    } else if (req.email() != null && req.otp() != null) {
-      // Hỗ trợ luồng cũ (email + otp) để backward compatibility
-      String email = req.email().trim().toLowerCase();
-      String otp = req.otp().trim();
-      String savedOtp = stringRedisTemplate.opsForValue().get(OTP_PREFIX + email);
-      if (savedOtp == null) {
-        throw new IllegalArgumentException(
-            "Mã xác thực OTP đã hết hạn hoặc chưa được tạo. Vui lòng yêu cầu mã mới");
-      }
-      if (!savedOtp.equals(otp)) {
-        throw new IllegalArgumentException(
-            "Mã xác thực OTP không chính xác hoặc chưa được xác thực");
-      }
-      stringRedisTemplate.delete(OTP_PREFIX + email);
-      targetEmail = email;
-    } else {
-      throw new IllegalArgumentException("Vui lòng cung cấp mã xác thực hoặc reset token hợp lệ");
+    // Xác thực bằng One-Time Reset Token (atomic getAndDelete)
+    String targetEmail =
+        stringRedisTemplate
+            .opsForValue()
+            .getAndDelete(RESET_TOKEN_PREFIX + req.resetToken().trim());
+    if (targetEmail == null) {
+      throw new IllegalArgumentException("Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
     }
 
     final String resolvedEmail = targetEmail;
@@ -272,20 +261,27 @@ public class AuthService {
                 () -> new IllegalArgumentException(ERR_USER_NOT_FOUND_EMAIL + resolvedEmail));
 
     user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
-    user.setTokenVersion(user.getTokenVersion() != null ? user.getTokenVersion() + 1 : 2);
+    user.setMustChangePassword(false);
+    int newVersion = user.getTokenVersion() != null ? user.getTokenVersion() + 1 : 2;
+    user.setTokenVersion(newVersion);
     userRepository.save(user);
 
-    // Hủy khóa cooldown sau khi reset mật khẩu thành công
-    stringRedisTemplate.delete(OTP_COOLDOWN_PREFIX + resolvedEmail);
+    Long userId = user.getUserId();
+    String email = user.getEmail();
+    postCommitExecutor.execute(
+        () -> {
+          // Hủy khóa cooldown sau khi reset mật khẩu thành công
+          stringRedisTemplate.delete(OTP_COOLDOWN_PREFIX + resolvedEmail);
 
-    // Cập nhật token_version vào Redis để chặn ngay Access Token cũ
-    tokenVersionService.updateUserTokenVersion(user.getEmail(), user.getTokenVersion());
+          // Cập nhật token_version vào Redis để chặn ngay Access Token cũ
+          tokenVersionService.updateUserTokenVersion(email, newVersion);
 
-    // Thu hồi toàn bộ Refresh Token của user trên mọi thiết bị
-    refreshTokenService.revokeAllUserTokens(user.getEmail());
+          // Thu hồi toàn bộ Refresh Token của user trên mọi thiết bị
+          refreshTokenService.revokeAllUserTokens(email);
 
-    // Phát sự kiện miền: Mật khẩu đã thay đổi (NotificationEventListener xử lý ngầm)
-    eventPublisher.publishEvent(new PasswordChangedEvent(user.getUserId(), user.getEmail()));
+          // Phát sự kiện miền: Mật khẩu đã thay đổi (NotificationEventListener xử lý ngầm)
+          eventPublisher.publishEvent(new PasswordChangedEvent(userId, email));
+        });
 
     return new MessageResponse("Đặt lại mật khẩu thành công!", true);
   }
@@ -308,17 +304,24 @@ public class AuthService {
     }
 
     user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
-    user.setTokenVersion(user.getTokenVersion() != null ? user.getTokenVersion() + 1 : 2);
+    user.setMustChangePassword(false);
+    int newVersion = user.getTokenVersion() != null ? user.getTokenVersion() + 1 : 2;
+    user.setTokenVersion(newVersion);
     userRepository.save(user);
 
-    // Cập nhật token_version vào Redis để chặn ngay Access Token cũ
-    tokenVersionService.updateUserTokenVersion(user.getEmail(), user.getTokenVersion());
+    Long userId = user.getUserId();
+    String userEmail = user.getEmail();
+    postCommitExecutor.execute(
+        () -> {
+          // Cập nhật token_version vào Redis để chặn ngay Access Token cũ
+          tokenVersionService.updateUserTokenVersion(userEmail, newVersion);
 
-    // Thu hồi toàn bộ Refresh Token của user trên mọi thiết bị
-    refreshTokenService.revokeAllUserTokens(user.getEmail());
+          // Thu hồi toàn bộ Refresh Token của user trên mọi thiết bị
+          refreshTokenService.revokeAllUserTokens(userEmail);
 
-    // Phát sự kiện miền: Mật khẩu đã thay đổi (NotificationEventListener xử lý ngầm)
-    eventPublisher.publishEvent(new PasswordChangedEvent(user.getUserId(), user.getEmail()));
+          // Phát sự kiện miền: Mật khẩu đã thay đổi (NotificationEventListener xử lý ngầm)
+          eventPublisher.publishEvent(new PasswordChangedEvent(userId, userEmail));
+        });
 
     return new MessageResponse("Đổi mật khẩu thành công!", true);
   }
@@ -352,6 +355,7 @@ public class AuthService {
         user.getPhoneNumber(),
         user.getAvatarUrl(),
         user.getRole(),
-        user.getStatus());
+        user.getStatus(),
+        user.getMustChangePassword());
   }
 }

@@ -271,6 +271,81 @@ class MockApiClient extends ApiClient {
     }
     return {'success': true, 'updatedCount': mockNotificationList.length};
   }
+
+  List<Map<String, dynamic>> mockScheduleList = [
+    {
+      'scheduleId': 101,
+      'classId': 10,
+      'classCode': 'MKT1918-DIG',
+      'courseCode': 'MLN122',
+      'courseName': 'Pháp luật đại cương',
+      'slotNumber': 2,
+      'sessionNo': 4,
+      'date': '2026-10-19',
+      'startTime': '10:00:00',
+      'endTime': '12:20:00',
+      'room': 'AL-R402',
+      'lecturerName': 'anhpn',
+      'status': 'PRESENT',
+      'semester': 'FALL2026',
+    },
+    {
+      'scheduleId': 102,
+      'classId': 11,
+      'classCode': 'SE1945-JS(IT)',
+      'courseCode': 'JIT401',
+      'courseName': 'Java Intern Training',
+      'slotNumber': 1,
+      'sessionNo': 13,
+      'date': '2026-10-20',
+      'startTime': '07:30:00',
+      'endTime': '09:50:00',
+      'room': 'BE-211',
+      'lecturerName': 'huyentt',
+      'status': 'PRESENT',
+      'semester': 'FALL2026',
+    },
+    {
+      'scheduleId': 103,
+      'classId': 10,
+      'classCode': 'MKT1918-DIG',
+      'courseCode': 'MLN122',
+      'courseName': 'Pháp luật đại cương',
+      'slotNumber': 1,
+      'sessionNo': 5,
+      'date': '2026-10-21',
+      'startTime': '07:30:00',
+      'endTime': '09:50:00',
+      'room': 'AL-R402',
+      'lecturerName': 'anhpn',
+      'status': 'ABSENT',
+      'semester': 'FALL2026',
+    },
+  ];
+
+  @override
+  Future<List<dynamic>> getSchedules({
+    String? date,
+    String? startDate,
+    String? endDate,
+    int? studentId,
+  }) async {
+    if (startDate != null && endDate != null) {
+      return mockScheduleList.where((s) {
+        final d = s['date'].toString();
+        return d.compareTo(startDate) >= 0 && d.compareTo(endDate) <= 0;
+      }).toList();
+    }
+    if (date != null) {
+      return mockScheduleList.where((s) => s['date'] == date).toList();
+    }
+    return mockScheduleList;
+  }
+
+  @override
+  Future<List<String>> getSemesters() async {
+    return ['FALL2026', 'SUMMER2026', 'SPRING2026'];
+  }
 }
 
 /// Mock ApiClient that simulates 400 Bad Request / 401 Unauthorized from backend.

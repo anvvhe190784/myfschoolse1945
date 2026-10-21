@@ -7,6 +7,22 @@ This repository contains a full-stack multi-tier application:
 
 ---
 
+## Architecture & Engineering Standards (Mandatory Compliance)
+
+All agents and developers working on this repository **MUST** strictly adhere to the project architecture, design, and engineering rules defined in:
+👉 [`.agents/rules/architecture-and-engineering.md`](.agents/rules/architecture-and-engineering.md)
+
+### Key Architectural Pillars:
+1. **Architecture, Layering & Communication**: Strict Controller -> Service -> Repository hierarchy, immutable DTO/Record encapsulation (zero JPA `@Entity` exposure), mandatory network timeouts on all outbound clients, Resilience4j circuit breakers with fallback, zero secrets in mobile/frontend clients.
+2. **Data Integrity & Concurrency Control**: `@Transactional` boundaries, zero remote I/O inside database transactions, race condition mitigation (pessimistic/optimistic locking, atomic SQL updates), safe Redis distributed locking with TTL and atomic Lua release, dual-write prevention via Transactional Outbox or `@TransactionalEventListener`, state machine safety with timeout recovery.
+3. **Performance, Database & Caching**: 1-to-1 schema & ORM parity with database migrations, comprehensive indexing on foreign keys and filter columns, zero N+1 queries (`JOIN FETCH` / `@EntityGraph` / batch fetching), mandatory pagination with max page size caps, HikariCP/Redis connection pool tuning, safe caching with stampede and penetration defense.
+4. **Security & Access Control**: Short-lived access tokens, explicit token claim separation, token revocation/blacklisting in Redis, method security (`@PreAuthorize`), strict BOLA/IDOR ownership checks, input validation (`@Valid`), gateway stripping of internal identity headers, strict CORS, security headers, rate limiting, and webhook HMAC-SHA256 signature verification.
+5. **Fault Tolerance & Asynchronous Processing**: Idempotency keys for mutating endpoints and consumer deduplication, resilient queue listeners with exponential backoff and Dead Letter Queue (DLQ/DLT) routing, bounded consumer concurrency.
+6. **Operations, Background Tasks & Observability**: Distributed scheduled jobs via ShedLock/Redis locks, graceful shutdown (`server.shutdown=graceful`), Actuator liveness/readiness health probes, centralized RFC 7807 `ProblemDetail` error handling, SLF4J MDC trace ID propagation, and log sanitization.
+7. **Conditional & System-Specific Rules**: Multi-tenant query isolation by `tenant_id`, streaming file uploads with size caps, real-time WebSocket/SSE connection lifecycle management with Redis Pub/Sub sync, and container/serverless cold start optimization.
+
+---
+
 ## SonarQube MCP Protocol (Code Quality & Security Gate)
 
 When interacting with the `sonarqube` MCP server, the Agent **MUST** strictly adhere to the following protocol:

@@ -15,6 +15,7 @@ class ScheduleModel {
   final String? lecturerName;
   final String? note;
   final String status; // 'UPCOMING', 'PRESENT', 'ABSENT', 'CANCELLED'
+  final String? semester;
   final DateTime? createdAt;
 
   const ScheduleModel({
@@ -33,6 +34,7 @@ class ScheduleModel {
     this.lecturerName,
     this.note,
     this.status = 'UPCOMING',
+    this.semester,
     this.createdAt,
   });
 
@@ -58,6 +60,7 @@ class ScheduleModel {
       lecturerName: json['lecturerName'] ?? json['lecturer_name'],
       note: json['note'],
       status: json['status'] ?? 'UPCOMING',
+      semester: json['semester'],
       createdAt: rawCreatedAt != null ? DateTime.tryParse(rawCreatedAt.toString()) : null,
     );
   }
@@ -79,6 +82,7 @@ class ScheduleModel {
       if (lecturerName != null) 'lecturerName': lecturerName,
       if (note != null) 'note': note,
       'status': status,
+      if (semester != null) 'semester': semester,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
     };
   }
@@ -103,6 +107,7 @@ class ScheduleModel {
     String? lecturerName,
     String? note,
     String? status,
+    String? semester,
     DateTime? createdAt,
   }) {
     return ScheduleModel(
@@ -121,6 +126,7 @@ class ScheduleModel {
       lecturerName: lecturerName ?? this.lecturerName,
       note: note ?? this.note,
       status: status ?? this.status,
+      semester: semester ?? this.semester,
       createdAt: createdAt ?? this.createdAt,
     );
   }

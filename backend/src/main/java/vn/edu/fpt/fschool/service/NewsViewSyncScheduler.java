@@ -1,5 +1,6 @@
 package vn.edu.fpt.fschool.service;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
@@ -7,31 +8,45 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import vn.edu.fpt.fschool.repository.NewsRepository;
 
 @Component
 @Slf4j
 public class NewsViewSyncScheduler {
 
-  private final NewsRepository newsRepository;
   private final NewsService newsService;
   private final StringRedisTemplate stringRedisTemplate;
+  private final DistributedLockService distributedLockService;
 
   public NewsViewSyncScheduler(
-      NewsRepository newsRepository,
       NewsService newsService,
       @Autowired(required = false) StringRedisTemplate stringRedisTemplate) {
-    this.newsRepository = newsRepository;
+    this(newsService, stringRedisTemplate, new DistributedLockService(stringRedisTemplate));
+  }
+
+  @Autowired
+  public NewsViewSyncScheduler(
+      NewsService newsService,
+      @Autowired(required = false) StringRedisTemplate stringRedisTemplate,
+      DistributedLockService distributedLockService) {
     this.newsService = newsService;
     this.stringRedisTemplate = stringRedisTemplate;
+    this.distributedLockService = distributedLockService;
   }
 
   @Scheduled(fixedDelay = 60000)
-  @Transactional
   public void syncViewsToDatabase() {
-    syncRedisViews();
-    syncInMemoryViews();
+    if (distributedLockService != null) {
+      distributedLockService.executeWithLock(
+          "NewsViewSyncScheduler",
+          Duration.ofSeconds(50),
+          () -> {
+            syncRedisViews();
+            syncInMemoryViews();
+          });
+    } else {
+      syncRedisViews();
+      syncInMemoryViews();
+    }
   }
 
   private void syncRedisViews() {
@@ -60,10 +75,16 @@ public class NewsViewSyncScheduler {
       long newsId = Long.parseLong(entry.getKey().toString());
       long count = Long.parseLong(entry.getValue().toString());
       if (count > 0) {
-        newsRepository.incrementViewsCount(newsId, count);
-        stringRedisTemplate
-            .opsForHash()
-            .delete(NewsService.NEWS_VIEWS_KEY, entry.getKey().toString());
+        newsService.updateViewsInDb(newsId, count);
+        Long remaining =
+            stringRedisTemplate
+                .opsForHash()
+                .increment(NewsService.NEWS_VIEWS_KEY, entry.getKey().toString(), -count);
+        if (remaining == null || remaining <= 0) {
+          stringRedisTemplate
+              .opsForHash()
+              .delete(NewsService.NEWS_VIEWS_KEY, entry.getKey().toString());
+        }
       }
     } catch (Exception ex) {
       log.error(
@@ -79,7 +100,7 @@ public class NewsViewSyncScheduler {
     for (Map.Entry<Long, AtomicLong> entry : inMem.entrySet()) {
       long delta = entry.getValue().getAndSet(0);
       if (delta > 0) {
-        newsRepository.incrementViewsCount(entry.getKey(), delta);
+        newsService.updateViewsInDb(entry.getKey(), delta);
       }
     }
   }

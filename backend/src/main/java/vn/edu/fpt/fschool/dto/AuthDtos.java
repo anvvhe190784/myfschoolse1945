@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 
 public class AuthDtos {
   public record LoginRequest(
-      @NotBlank(message = "Email hoặc Roll Number không được để trống") String identifier,
+      @NotBlank(message = "Email không được để trống") String identifier,
       @NotBlank(message = "Mật khẩu không được để trống") String password) {}
 
   public record LoginResponse(
@@ -19,7 +19,8 @@ public class AuthDtos {
       String rollNumber,
       String email,
       String fullName,
-      String role) {
+      String role,
+      Boolean mustChangePassword) {
     // Backwards compatibility method for code expecting .token()
     public String token() {
       return accessToken;
@@ -35,23 +36,10 @@ public class AuthDtos {
   public record LogoutRequest(String refreshToken) {}
 
   public record ResetPasswordRequest(
-      String email,
-      String otp,
-      String resetToken,
+      @NotBlank(message = "Reset token không được để trống") String resetToken,
       @NotBlank(message = "Mật khẩu mới không được để trống")
-          @Size(min = 8, max = 12, message = "Mật khẩu mới phải có độ dài từ 8 đến 12 ký tự")
-          @Pattern(
-              regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).{8,12}$",
-              message = "Mật khẩu mới phải bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt")
-          String newPassword) {
-    public ResetPasswordRequest(String email, String otp, String newPassword) {
-      this(email, otp, null, newPassword);
-    }
-
-    public ResetPasswordRequest(String resetToken, String newPassword) {
-      this(null, null, resetToken, newPassword);
-    }
-  }
+          @Size(min = 6, max = 50, message = "Mật khẩu mới phải có độ dài từ 6 đến 50 ký tự")
+          String newPassword) {}
 
   public record ChangePasswordRequest(
       @NotBlank(message = "Mật khẩu hiện tại không được để trống") String oldPassword,
@@ -79,7 +67,8 @@ public class AuthDtos {
       String phoneNumber,
       String avatarUrl,
       String role,
-      String status) {}
+      String status,
+      Boolean mustChangePassword) {}
 
   public record MessageResponse(String message, boolean success) {}
 }

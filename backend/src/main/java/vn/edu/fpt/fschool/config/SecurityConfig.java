@@ -28,9 +28,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   private final JwtAuthFilter jwtAuthFilter;
+  private final TraceIdFilter traceIdFilter;
 
-  public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+  public SecurityConfig(JwtAuthFilter jwtAuthFilter, TraceIdFilter traceIdFilter) {
     this.jwtAuthFilter = jwtAuthFilter;
+    this.traceIdFilter = traceIdFilter;
   }
 
   @Bean
@@ -61,7 +63,15 @@ public class SecurityConfig {
               headers ->
                   headers
                       .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
-                      .contentTypeOptions(Customizer.withDefaults()))
+                      .contentTypeOptions(Customizer.withDefaults())
+                      .httpStrictTransportSecurity(
+                          hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
+                      .referrerPolicy(
+                          referrer ->
+                              referrer.policy(
+                                  org.springframework.security.web.header.writers
+                                      .ReferrerPolicyHeaderWriter.ReferrerPolicy
+                                      .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
           .authorizeHttpRequests(
               auth ->
                   auth.dispatcherTypeMatchers(
@@ -76,9 +86,13 @@ public class SecurityConfig {
                           "/api/v1/auth/forgot-password",
                           "/api/v1/auth/verify-otp",
                           "/api/v1/auth/reset-password",
+                          "/actuator/health",
+                          "/actuator/health/**",
                           "/admin",
                           "/admin/",
-                          "/admin/**",
+                          "/admin/index.html",
+                          "/admin/style.css",
+                          "/admin/fpt_logo.png",
                           "/",
                           "/index.html",
                           "/favicon.ico",
@@ -96,6 +110,7 @@ public class SecurityConfig {
                       // Other requests require authentication
                       .anyRequest()
                       .authenticated())
+          .addFilterBefore(traceIdFilter, UsernamePasswordAuthenticationFilter.class)
           .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
       return http.build();

@@ -11,6 +11,7 @@ import lombok.Setter;
 @Table(name = "grades")
 @Getter
 @Setter
+@SuppressWarnings("JpaDataSourceORMInspection")
 public class Grade {
 
   @Id
@@ -41,13 +42,21 @@ public class Grade {
   @Column(name = "status", nullable = false)
   private String status = "PUBLISHED"; // 'DRAFT', 'PUBLISHED'
 
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private OffsetDateTime createdAt;
+
   @Column(name = "updated_at", nullable = false)
   private OffsetDateTime updatedAt;
 
   @PrePersist
+  protected void onCreate() {
+    if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+    if (updatedAt == null) updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    if (status == null) status = "PUBLISHED";
+  }
+
   @PreUpdate
   protected void onUpdate() {
     updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
-    if (status == null) status = "PUBLISHED";
   }
 }

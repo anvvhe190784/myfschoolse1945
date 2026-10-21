@@ -37,39 +37,58 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
-    String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-
-    if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
-      String jwt = authHeader.substring(7);
-      if (!tokenBlacklistService.isBlacklisted(jwt) && jwtUtils.validateToken(jwt)) {
-        String tokenType = jwtUtils.getTokenType(jwt);
-        if ("REFRESH".equalsIgnoreCase(tokenType)) {
-          filterChain.doFilter(request, response);
-          return;
-        }
-        String email = jwtUtils.getEmailFromToken(jwt);
-        Integer tokenVersion = jwtUtils.getTokenVersionFromToken(jwt);
-
-        // Chặn nhanh Access Token cũ nếu token_version không hợp lệ (đã đổi mật khẩu)
-        if (!tokenVersionService.isTokenVersionValid(email, tokenVersion)) {
-          filterChain.doFilter(request, response);
-          return;
-        }
-
-        String role = jwtUtils.getRoleFromToken(jwt);
-
-        // Spring Security role prefix convention: ROLE_<ROLE>
-        String authorityName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(authorityName);
-
-        UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(
-                email, null, Collections.singletonList(authority));
-        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-      }
+    String jwt = resolveBearerToken(request);
+    if (jwt != null && !tokenBlacklistService.isBlacklisted(jwt)) {
+      authenticateFromJwt(jwt, request);
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  private String resolveBearerToken(HttpServletRequest request) {
+    String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+    if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+      return authHeader.substring(7);
+    }
+    return null;
+  }
+
+  private void authenticateFromJwt(String jwt, HttpServletRequest request) {
+    var claimsOpt = jwtUtils.parseClaimsSafe(jwt);
+    if (claimsOpt.isEmpty()) {
+      return;
+    }
+
+    io.jsonwebtoken.Claims claims = claimsOpt.get();
+    String tokenType = jwtUtils.getTokenType(claims);
+    if ("REFRESH".equalsIgnoreCase(tokenType)) {
+      return;
+    }
+
+    String email = claims.getSubject();
+    Integer tokenVersion = jwtUtils.getTokenVersionFromClaims(claims);
+    if (!tokenVersionService.isTokenVersionValid(email, tokenVersion)) {
+      return;
+    }
+
+    setSecurityAuthentication(claims, email, request);
+  }
+
+  private void setSecurityAuthentication(
+      io.jsonwebtoken.Claims claims, String email, HttpServletRequest request) {
+    String role = jwtUtils.getRoleFromClaims(claims);
+    if (role == null) {
+      return;
+    }
+
+    // Spring Security role prefix convention: ROLE_<ROLE>
+    String authorityName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(authorityName);
+
+    UsernamePasswordAuthenticationToken authentication =
+        new UsernamePasswordAuthenticationToken(
+            email, null, Collections.singletonList(authority));
+    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+    SecurityContextHolder.getContext().setAuthentication(authentication);
   }
 }

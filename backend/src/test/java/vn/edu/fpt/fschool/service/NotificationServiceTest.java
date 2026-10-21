@@ -123,10 +123,7 @@ class NotificationServiceTest {
     when(userRepository.findByEmailIgnoreCase("student@fpt.edu.vn"))
         .thenReturn(Optional.of(testUser));
     when(notificationRepository.countByUserIdAndIsReadFalse(1L)).thenReturn(2L);
-    when(notificationReadRepository.findReadNotificationIdsByUserId(1L))
-        .thenReturn(Collections.emptySet());
-    when(notificationRepository.findVisibleNotificationsForUser(1L))
-        .thenReturn(List.of(broadcastNotification));
+    when(notificationRepository.countUnreadBroadcastsForUser(1L)).thenReturn(1L);
 
     UnreadCountResponse result = notificationService.getUnreadCount("student@fpt.edu.vn");
 

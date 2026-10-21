@@ -36,6 +36,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return problem;
   }
 
+  @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+  public ProblemDetail handleOptimisticLock(
+      org.springframework.dao.OptimisticLockingFailureException ex) {
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.CONFLICT,
+            "Dữ liệu đã bị cập nhật bởi một người dùng khác. Vui lòng làm mới trang và thử lại.");
+    problem.setTitle("Concurrent Modification Conflict");
+    problem.setType(URI.create("https://fschool.edu.vn/errors/conflict"));
+    problem.setProperty(PROPERTY_TIMESTAMP, Instant.now());
+    return problem;
+  }
+
   @ExceptionHandler(BadCredentialsException.class)
   public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
     ProblemDetail problem =

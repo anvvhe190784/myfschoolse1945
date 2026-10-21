@@ -180,32 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        final success = await _controller.login();
-                        if (!context.mounted) return;
-                        if (success) {
-                          final studentName =
-                              _controller.loginResponse?.fullName ?? 'Sinh viên F-School';
-                          final email = _controller.loginResponse?.email;
-                          final rollNumber = _controller.loginResponse?.rollNumber;
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (context) => HomeScreen(
-                                studentName: studentName,
-                                email: email,
-                                rollNumber: rollNumber,
-                              ),
-                            ),
-                          );
-                        } else if (_controller.errorMessage != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(_controller.errorMessage!),
-                              backgroundColor: Colors.red.shade700,
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: () => _handleLoginPress(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryYellow,
                         foregroundColor: const Color(0xFF1E293B),
@@ -263,6 +238,62 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
       },
+    );
+  }
+
+  Future<void> _handleLoginPress(BuildContext context) async {
+    final success = await _controller.login();
+    if (!context.mounted) return;
+    if (success) {
+      await _handleLoginSuccess(context);
+    } else if (_controller.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_controller.errorMessage!),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleLoginSuccess(BuildContext context) async {
+    final role = _controller.loginResponse?.role.toUpperCase() ?? 'STUDENT';
+    if (role != 'STUDENT' && role != 'ROLE_STUDENT') {
+      await _controller.apiClient.clearAuthToken();
+      if (!context.mounted) return;
+      await _showRestrictedRoleDialog(context);
+      return;
+    }
+
+    final studentName = _controller.loginResponse?.fullName ?? 'Sinh viên F-School';
+    final email = _controller.loginResponse?.email;
+    final rollNumber = _controller.loginResponse?.rollNumber;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(
+          studentName: studentName,
+          email: email,
+          rollNumber: rollNumber,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showRestrictedRoleDialog(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Truy cập bị giới hạn'),
+        content: const Text(
+          'Ứng dụng di động hiện chỉ dành riêng cho Sinh viên. Thầy/Cô và Quản trị viên vui lòng truy cập Cổng thông tin Web để làm việc.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
     );
   }
 }

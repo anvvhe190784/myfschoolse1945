@@ -38,3 +38,8 @@
 # SonarScanner work dir
 .scannerwork/
 
+# Web (React / Vite)
+**/node_modules/
+**/dist/
+**/dist-ssr/
+

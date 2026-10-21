@@ -15,6 +15,7 @@ import vn.edu.fpt.fschool.dto.RequestDtos.CreateRequestDto;
 import vn.edu.fpt.fschool.dto.RequestDtos.RequestResponse;
 import vn.edu.fpt.fschool.model.RequestEntity;
 import vn.edu.fpt.fschool.model.User;
+import vn.edu.fpt.fschool.repository.ClassEnrollmentRepository;
 import vn.edu.fpt.fschool.repository.ParentStudentRepository;
 import vn.edu.fpt.fschool.repository.RequestRepository;
 import vn.edu.fpt.fschool.repository.UserRepository;
@@ -23,6 +24,7 @@ import vn.edu.fpt.fschool.repository.UserRepository;
 class ParentAccessTest {
 
   @Mock private ParentStudentRepository parentStudentRepository;
+  @Mock private ClassEnrollmentRepository classEnrollmentRepository;
   @Mock private UserRepository userRepository;
   @Mock private RequestRepository requestRepository;
   @Mock private vn.edu.fpt.fschool.mapper.AcademicMapper academicMapper;
@@ -35,7 +37,8 @@ class ParentAccessTest {
 
   @BeforeEach
   void setUp() {
-    studentAccessResolver = new StudentAccessResolver(parentStudentRepository);
+    studentAccessResolver =
+        new StudentAccessResolver(parentStudentRepository, classEnrollmentRepository);
     requestService =
         new RequestService(
             requestRepository, userRepository, studentAccessResolver, academicMapper);

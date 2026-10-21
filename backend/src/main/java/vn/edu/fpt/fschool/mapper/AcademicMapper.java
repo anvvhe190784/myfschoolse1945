@@ -48,6 +48,10 @@ public interface AcademicMapper {
       target = "lecturerName",
       expression =
           "java(schedule.getLecturer() != null ? schedule.getLecturer().getFullName() : \"N/A\")")
+  @Mapping(
+      target = "semester",
+      expression =
+          "java(schedule.getClassEntity() != null ? schedule.getClassEntity().getSemester() : null)")
   ScheduleResponse toScheduleResponse(Schedule schedule);
 
   List<ScheduleResponse> toScheduleResponseList(List<Schedule> schedules);

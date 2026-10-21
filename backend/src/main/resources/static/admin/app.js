@@ -158,9 +158,26 @@ async function apiCall(endpoint, options = {}) {
 // ==========================================
 // AUTHENTICATION & SESSION
 // ==========================================
+function updateCurrentUserUI(userJson) {
+    if (!userJson) return;
+    try {
+        const user = JSON.parse(userJson);
+        const nameEl = document.getElementById('current-user-name');
+        const roleEl = document.getElementById('current-user-role');
+        const avatarEl = document.getElementById('current-user-avatar');
+        const dropdownEmailEl = document.getElementById('dropdown-user-email');
+
+        if (nameEl) nameEl.textContent = user.fullName || user.email || 'Quản Trị Viên';
+        if (roleEl) roleEl.textContent = user.role === 'ADMIN' ? 'Admin' : (user.role || 'Admin');
+        if (avatarEl) avatarEl.textContent = (user.fullName || 'A').charAt(0).toUpperCase();
+        if (dropdownEmailEl) dropdownEmailEl.textContent = user.email || 'admin@fpt.edu.vn';
+    } catch (err) {
+        console.error('Error parsing user JSON:', err);
+    }
+}
+
 function checkSession() {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
-    const userJson = localStorage.getItem(AUTH_USER_KEY);
     const overlay = document.getElementById('login-overlay');
 
     if (!token) {
@@ -169,22 +186,7 @@ function checkSession() {
     }
 
     if (overlay) overlay.style.display = 'none';
-    if (userJson) {
-        try {
-            const user = JSON.parse(userJson);
-            const nameEl = document.getElementById('current-user-name');
-            const roleEl = document.getElementById('current-user-role');
-            const avatarEl = document.getElementById('current-user-avatar');
-            const dropdownEmailEl = document.getElementById('dropdown-user-email');
-
-            if (nameEl) nameEl.textContent = user.fullName || user.email || 'Quản Trị Viên';
-            if (roleEl) roleEl.textContent = user.role === 'ADMIN' ? 'Admin' : (user.role || 'Admin');
-            if (avatarEl) avatarEl.textContent = (user.fullName || 'A').charAt(0).toUpperCase();
-            if (dropdownEmailEl) dropdownEmailEl.textContent = user.email || 'admin@fpt.edu.vn';
-        } catch (err) {
-            console.error('Error parsing user JSON:', err);
-        }
-    }
+    updateCurrentUserUI(localStorage.getItem(AUTH_USER_KEY));
     void loadDashboardStats();
 }
 
@@ -311,6 +313,26 @@ function switchTab(tabId) {
 // ==========================================
 // TAB 1: DASHBOARD STATS & ANALYTICS WIDGETS
 // ==========================================
+function applySettledArray(result, onValue) {
+    if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+        onValue(result.value);
+    }
+}
+
+function updateElementText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+function updateHeaderNotificationBadge(requests) {
+    const pendingCount = requests.filter(r => r.status === 'PENDING').length;
+    const notifBadge = document.getElementById('header-notif-badge');
+    if (notifBadge) {
+        notifBadge.textContent = String(pendingCount);
+        notifBadge.style.display = pendingCount > 0 ? 'flex' : 'none';
+    }
+}
+
 async function loadDashboardStats() {
     try {
         const [users, courses, classes, requests] = await Promise.allSettled([
@@ -320,37 +342,26 @@ async function loadDashboardStats() {
             apiCall('/api/v1/admin/academic/requests')
         ]);
 
-        if (users.status === 'fulfilled' && Array.isArray(users.value)) {
-            cachedUsers = users.value;
-            const usersCountEl = document.getElementById('stat-users-count');
-            if (usersCountEl) usersCountEl.textContent = String(cachedUsers.length);
-        }
+        applySettledArray(users, val => {
+            cachedUsers = val;
+            updateElementText('stat-users-count', String(val.length));
+        });
 
-        if (courses.status === 'fulfilled' && Array.isArray(courses.value)) {
-            cachedCourses = courses.value;
-            const coursesCountEl = document.getElementById('stat-courses-count');
-            if (coursesCountEl) coursesCountEl.textContent = String(cachedCourses.length);
-        }
+        applySettledArray(courses, val => {
+            cachedCourses = val;
+            updateElementText('stat-courses-count', String(val.length));
+        });
 
-        if (classes.status === 'fulfilled' && Array.isArray(classes.value)) {
-            cachedClasses = classes.value;
-            const classesCountEl = document.getElementById('stat-classes-count');
-            if (classesCountEl) classesCountEl.textContent = String(cachedClasses.length);
-        }
+        applySettledArray(classes, val => {
+            cachedClasses = val;
+            updateElementText('stat-classes-count', String(val.length));
+        });
 
-        if (requests.status === 'fulfilled' && Array.isArray(requests.value)) {
-            cachedRequests = requests.value;
-            const requestsCountEl = document.getElementById('stat-requests-count');
-            if (requestsCountEl) requestsCountEl.textContent = String(cachedRequests.length);
-
-            // Update top header notification badge
-            const pendingCount = cachedRequests.filter(r => r.status === 'PENDING').length;
-            const notifBadge = document.getElementById('header-notif-badge');
-            if (notifBadge) {
-                notifBadge.textContent = String(pendingCount);
-                notifBadge.style.display = pendingCount > 0 ? 'flex' : 'none';
-            }
-        }
+        applySettledArray(requests, val => {
+            cachedRequests = val;
+            updateElementText('stat-requests-count', String(val.length));
+            updateHeaderNotificationBadge(val);
+        });
 
         renderDashboardRecentRequests();
         renderDonutChart(cachedUsers);
@@ -360,30 +371,62 @@ async function loadDashboardStats() {
     }
 }
 
+function matchesRecentRequestQuery(r, query) {
+    if (!query) return true;
+    return Boolean(
+        r.studentName?.toLowerCase().includes(query) ||
+        r.title?.toLowerCase().includes(query) ||
+        r.studentRollNumber?.toLowerCase().includes(query) ||
+        r.requestType?.toLowerCase().includes(query)
+    );
+}
+
+function getRecentRequestStatusBadge(status) {
+    if (status === 'APPROVED') {
+        return { statusClass: 'status-delivered', statusLabel: 'Delivered' };
+    }
+    if (status === 'REJECTED') {
+        return { statusClass: 'status-canceled', statusLabel: 'Canceled' };
+    }
+    return { statusClass: 'status-pending', statusLabel: 'Pending' };
+}
+
+function renderRecentRequestRow(r) {
+    const { statusClass, statusLabel } = getRecentRequestStatusBadge(r.status);
+    const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : '---';
+    const actionBtn = r.status === 'PENDING'
+        ? `<button class="btn btn-primary btn-sm" onclick="openProcessModal(${r.requestId})">Duyệt</button>`
+        : `<span style="font-size: 11px; color: var(--text-muted);">Hoàn tất</span>`;
+
+    return `
+        <tr>
+            <td style="font-weight: 700; color: var(--primary);">#${r.requestId}</td>
+            <td>
+                <div style="font-weight: 600;">${escapeHtml(r.studentName || 'Học sinh')}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(r.studentRollNumber || '')}</div>
+            </td>
+            <td><span class="badge badge-info">${escapeHtml(r.requestType || 'Đơn từ')}</span></td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${escapeHtml(r.title || '---')}
+            </td>
+            <td>${dateStr}</td>
+            <td><span class="${statusClass}">${statusLabel}</span></td>
+            <td style="text-align: right;">${actionBtn}</td>
+        </tr>
+    `;
+}
+
 function renderDashboardRecentRequests() {
     const tbody = document.getElementById('dashboard-requests-tbody');
     if (!tbody) return;
 
-    const searchInput = document.getElementById('dashboard-requests-search');
-    const filterSelect = document.getElementById('dashboard-requests-filter');
+    const query = document.getElementById('dashboard-requests-search')?.value.toLowerCase().trim() || '';
+    const statusFilter = document.getElementById('dashboard-requests-filter')?.value || 'ALL';
 
-    const query = searchInput?.value.toLowerCase().trim() || '';
-    const statusFilter = filterSelect?.value || 'ALL';
-
-    let filtered = [...cachedRequests];
-
-    if (statusFilter !== 'ALL') {
-        filtered = filtered.filter(r => r.status === statusFilter);
-    }
-
-    if (query) {
-        filtered = filtered.filter(r =>
-            (r.studentName && r.studentName.toLowerCase().includes(query)) ||
-            (r.title && r.title.toLowerCase().includes(query)) ||
-            (r.studentRollNumber && r.studentRollNumber.toLowerCase().includes(query)) ||
-            (r.requestType && r.requestType.toLowerCase().includes(query))
-        );
-    }
+    const filtered = cachedRequests.filter(r => {
+        const matchesStatus = (statusFilter === 'ALL' || r.status === statusFilter);
+        return matchesStatus && matchesRecentRequestQuery(r, query);
+    });
 
     if (filtered.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding: 24px;">Không có đơn từ nào phù hợp điều kiện lọc.</td></tr>';
@@ -391,43 +434,7 @@ function renderDashboardRecentRequests() {
     }
 
     // Display top 8 recent requests
-    tbody.innerHTML = filtered.slice(0, 8).map(r => {
-        let statusClass = 'status-pending';
-        let statusLabel = 'Pending';
-
-        if (r.status === 'APPROVED') {
-            statusClass = 'status-delivered';
-            statusLabel = 'Delivered';
-        } else if (r.status === 'REJECTED') {
-            statusClass = 'status-canceled';
-            statusLabel = 'Canceled';
-        }
-
-        const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : '---';
-
-        return `
-            <tr>
-                <td style="font-weight: 700; color: var(--primary);">#${r.requestId}</td>
-                <td>
-                    <div style="font-weight: 600;">${escapeHtml(r.studentName || 'Học sinh')}</div>
-                    <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(r.studentRollNumber || '')}</div>
-                </td>
-                <td><span class="badge badge-info">${escapeHtml(r.requestType || 'Đơn từ')}</span></td>
-                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    ${escapeHtml(r.title || '---')}
-                </td>
-                <td>${dateStr}</td>
-                <td><span class="${statusClass}">${statusLabel}</span></td>
-                <td style="text-align: right;">
-                    ${r.status === 'PENDING' ? `
-                        <button class="btn btn-primary btn-sm" onclick="openProcessModal(${r.requestId})">
-                            Duyệt
-                        </button>
-                    ` : `<span style="font-size: 11px; color: var(--text-muted);">Hoàn tất</span>`}
-                </td>
-            </tr>
-        `;
-    }).join('');
+    tbody.innerHTML = filtered.slice(0, 8).map(renderRecentRequestRow).join('');
 }
 
 // Render SVG Donut Chart for User Roles
@@ -733,7 +740,8 @@ const slotTimes = {
     2: {start: '10:00:00', end: '12:20:00'},
     3: {start: '12:50:00', end: '15:10:00'},
     4: {start: '15:20:00', end: '17:40:00'},
-    5: {start: '18:00:00', end: '20:20:00'}
+    5: {start: '17:50:00', end: '20:10:00'},
+    6: {start: '20:20:00', end: '22:40:00'}
 };
 
 async function handleCreateSchedule(e) {
@@ -795,6 +803,39 @@ async function handleCreateSchedule(e) {
 // ==========================================
 // TAB 6: REQUESTS QUEUE (UC-ADM-07)
 // ==========================================
+function renderRequestManagementRow(r) {
+    let statusBadge = '<span class="status-pending">PENDING</span>';
+    if (r.status === 'APPROVED') {
+        statusBadge = '<span class="status-delivered">APPROVED</span>';
+    } else if (r.status === 'REJECTED') {
+        statusBadge = '<span class="status-canceled">REJECTED</span>';
+    }
+
+    const actionCell = r.status === 'PENDING'
+        ? `<button class="btn btn-primary btn-sm" onclick="openProcessModal(${r.requestId})">Xử lý đơn</button>`
+        : `<span style="font-size: 12px; color: var(--text-muted);">${escapeHtml(r.responseNote || 'Đã giải quyết')}</span>`;
+
+    const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : '---';
+
+    return `
+        <tr>
+            <td style="font-weight: 700; color: var(--primary);">#${r.requestId}</td>
+            <td>
+                <div style="font-weight: 600;">${escapeHtml(r.studentName || '---')}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(r.studentRollNumber || '')}</div>
+            </td>
+            <td><span class="badge badge-info">${escapeHtml(r.requestType)}</span></td>
+            <td>
+                <div style="font-weight: 600;">${escapeHtml(r.title)}</div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">${escapeHtml(r.content || '')}</div>
+            </td>
+            <td style="font-size: 12px;">${dateStr}</td>
+            <td>${statusBadge}</td>
+            <td style="text-align: right;">${actionCell}</td>
+        </tr>
+    `;
+}
+
 async function loadRequests() {
     const tbody = document.getElementById('requests-table-body');
     if (!tbody) return;
@@ -809,42 +850,7 @@ async function loadRequests() {
             return;
         }
 
-        tbody.innerHTML = cachedRequests.map(r => {
-            let statusClass = 'status-pending';
-            let statusBadge = '<span class="status-pending">PENDING</span>';
-
-            if (r.status === 'APPROVED') {
-                statusClass = 'status-delivered';
-                statusBadge = '<span class="status-delivered">APPROVED</span>';
-            } else if (r.status === 'REJECTED') {
-                statusClass = 'status-canceled';
-                statusBadge = '<span class="status-canceled">REJECTED</span>';
-            }
-
-            return `
-                <tr>
-                    <td style="font-weight: 700; color: var(--primary);">#${r.requestId}</td>
-                    <td>
-                        <div style="font-weight: 600;">${escapeHtml(r.studentName || '---')}</div>
-                        <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(r.studentRollNumber || '')}</div>
-                    </td>
-                    <td><span class="badge badge-info">${escapeHtml(r.requestType)}</span></td>
-                    <td>
-                        <div style="font-weight: 600;">${escapeHtml(r.title)}</div>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">${escapeHtml(r.content || '')}</div>
-                    </td>
-                    <td style="font-size: 12px;">${r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : '---'}</td>
-                    <td>${statusBadge}</td>
-                    <td style="text-align: right;">
-                        ${r.status === 'PENDING' ? `
-                            <button class="btn btn-primary btn-sm" onclick="openProcessModal(${r.requestId})">
-                                Xử lý đơn
-                            </button>
-                        ` : `<span style="font-size: 12px; color: var(--text-muted);">${escapeHtml(r.responseNote || 'Đã giải quyết')}</span>`}
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        tbody.innerHTML = cachedRequests.map(renderRequestManagementRow).join('');
     } catch (err) {
         tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Lỗi tải đơn từ: ${escapeHtml(err.message)}</td></tr>`;
     }
@@ -978,10 +984,7 @@ async function uploadCsvFile(file) {
 // ==========================================
 // INITIALIZATION & EVENT LISTENERS
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    checkSession();
-
-    // Top Header User Profile Button
+function setupHeaderAndNav() {
     const userProfileBtn = document.getElementById('user-profile-btn');
     if (userProfileBtn) {
         userProfileBtn.addEventListener('click', (e) => {
@@ -990,7 +993,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Top Header Notification Bell
     const notifBtn = document.getElementById('header-notif-btn');
     if (notifBtn) {
         notifBtn.addEventListener('click', () => {
@@ -998,7 +1000,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Sidebar navigation
     document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
         item.addEventListener('click', () => {
             const tab = item.dataset.tab;
@@ -1006,11 +1007,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Logout button
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) btnLogout.addEventListener('click', handleLogout);
+}
 
-    // Dashboard Recent Requests Search & Filter
+function setupFilterListeners() {
     const dashboardSearch = document.getElementById('dashboard-requests-search');
     if (dashboardSearch) {
         dashboardSearch.addEventListener('input', () => {
@@ -1025,7 +1026,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Users Search Filter
     const userSearchInput = document.getElementById('user-search-input');
     if (userSearchInput) {
         userSearchInput.addEventListener('input', (e) => {
@@ -1043,8 +1043,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+}
 
-    // Forms
+function setupFormListeners() {
     const loginForm = document.getElementById('login-form');
     if (loginForm) loginForm.addEventListener('submit', (e) => {
         void handleLogin(e);
@@ -1074,8 +1075,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formProcessRequest) formProcessRequest.addEventListener('submit', (e) => {
         void handleProcessRequest(e);
     });
+}
 
-    // Refresh buttons
+function setupRefreshButtons() {
     const btnRefreshUsers = document.getElementById('btn-refresh-users');
     if (btnRefreshUsers) btnRefreshUsers.addEventListener('click', () => {
         void loadUsers();
@@ -1085,8 +1087,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnRefreshRequests) btnRefreshRequests.addEventListener('click', () => {
         void loadRequests();
     });
+}
 
-    // Drag and drop CSV upload
+function setupCsvDropZone() {
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('csv-file-input');
 
@@ -1116,4 +1119,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkSession();
+    setupHeaderAndNav();
+    setupFilterListeners();
+    setupFormListeners();
+    setupRefreshButtons();
+    setupCsvDropZone();
 });
